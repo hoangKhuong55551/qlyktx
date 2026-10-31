@@ -1,0 +1,75 @@
+﻿@model Qlykytucxa.Models.IncidentRequest
+
+@{
+    ViewBag.Title = "Gửi Yêu cầu Báo hỏng";
+}
+
+<div class="card shadow-sm border-0 rounded-4" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <h4 class="fw-bold text-danger mb-1">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Báo hỏng & Yêu cầu Sửa chữa
+                </h4>
+                <p class="text-muted mb-0 small">Điền thông tin hư hỏng cơ sở vật chất để Ban Quản lý tiếp nhận xử lý</p>
+            </div>
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        @using (Html.BeginForm())
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.RoomId, "Phòng phát sinh sự cố", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.DropDownList("RoomId", null, "-- Chọn số phòng --", htmlAttributes: new { @class = "form-select", @required = "required" })
+                    @Html.ValidationMessageFor(model => model.RoomId, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.Category, "Loại sự cố", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.DropDownListFor(model => model.Category, new SelectList(new[] { "Điện", "Nước", "Điều hòa", "Giường tủ", "Khác" }), "-- Chọn phân loại --", new { @class = "form-select", @required = "required" })
+                    @Html.ValidationMessageFor(model => model.Category, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-12">
+                    @Html.LabelFor(model => model.Title, "Tiêu đề sự cố", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.EditorFor(model => model.Title, new { htmlAttributes = new { @class = "form-control", placeholder = "VD: Hỏng vòi sen nhà tắm, Cháy bóng đèn...", @required = "required" } })
+                    @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-12">
+                    @Html.LabelFor(model => model.Description, "Mô tả chi tiết tình trạng hư hỏng", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.TextAreaFor(model => model.Description, 4, 50, new { @class = "form-control", placeholder = "Mô tả rõ vị trí hỏng, hiện tượng để thợ chuẩn bị đồ nghề sửa chữa...", @required = "required" })
+                    @Html.ValidationMessageFor(model => model.Description, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.ReporterName, "Người báo hỏng", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.EditorFor(model => model.ReporterName, new { htmlAttributes = new { @class = "form-control", placeholder = "Họ tên sinh viên hoặc quản lý", @required = "required" } })
+                    @Html.ValidationMessageFor(model => model.ReporterName, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.AssignedTo, "Phân công nhân viên sửa (nếu có)", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.EditorFor(model => model.AssignedTo, new { htmlAttributes = new { @class = "form-control", placeholder = "VD: Chú Tuấn (Thợ điện) / Để trống nếu chưa" } })
+                </div>
+
+                <div class="col-12 pt-3 border-top text-end">
+                    <button type="submit" class="btn btn-danger btn-lg px-4 shadow-sm">
+                        <i class="bi bi-send-fill me-1"></i> Gửi Yêu cầu
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg px-3 ms-2">Hủy bỏ</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

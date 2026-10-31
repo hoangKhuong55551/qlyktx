@@ -1,0 +1,61 @@
+﻿@model Qlykytucxa.Models.RoomRegistrations
+
+@{
+    ViewBag.Title = "Chinh sua Xep phong";
+}
+
+<h2 class="text-primary">Chinh sua Xep phong</h2>
+<hr />
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.RegistrationId)
+
+    <div class="row">
+        <div class="col-md-6">
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.StudentId, "Sinh vien", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.DropDownList("StudentId", null, htmlAttributes: new { @class = "form-select" })
+                @Html.ValidationMessageFor(model => model.StudentId, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.RoomId, "Phong", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.DropDownList("RoomId", null, htmlAttributes: new { @class = "form-select" })
+                @Html.ValidationMessageFor(model => model.RoomId, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.CheckInDate, "Ngay vao o", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.CheckInDate, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.CheckInDate, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.CheckOutDate, "Ngay tra phong", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.CheckOutDate, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.CheckOutDate, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.Status, "Trang thai", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.DropDownListFor(model => model.Status,
+                    new SelectList(new[] { "Dang o", "Da tra phong" }, Model.Status),
+                    new { @class = "form-select" })
+                @Html.ValidationMessageFor(model => model.Status, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mt-3">
+                <input type="submit" value="Luu thay doi" class="btn btn-primary" />
+                @Html.ActionLink("Quay lai", "Index", null, new { @class = "btn btn-secondary" })
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

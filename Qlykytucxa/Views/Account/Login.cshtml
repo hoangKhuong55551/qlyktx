@@ -1,0 +1,142 @@
+﻿@model Qlykytucxa.Models.LoginViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập Hệ thống Ký túc xá</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            max-width: 480px;
+            width: 100%;
+            padding: 40px;
+        }
+        .brand-logo {
+            width: 56px;
+            height: 56px;
+            background: #2563eb;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            font-size: 28px;
+            margin: 0 auto 16px;
+        }
+        .btn-quick {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <div class="brand-logo shadow-sm">
+                <i class="bi bi-buildings-fill"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">KTX MANAGER</h4>
+            <p class="text-muted small mb-0">Hệ thống Quản lý Ký túc xá Đại học</p>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success py-2 small mb-3">
+                <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
+            </div>
+        }
+
+        @using (Html.BeginForm("Login", "Account", new { returnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { id = "loginForm" }))
+        {
+            @Html.AntiForgeryToken()
+
+            if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2 small mb-3">
+                    @Html.ValidationSummary(true, "")
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Tài khoản / Mã sinh viên:</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                    <input type="text" id="usernameInput" name="Username" class="form-control border-start-0" 
+                           placeholder="admin, staff hoặc mã SV (SV001)" value="@Model.Username" required autofocus />
+                </div>
+                @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger small" })
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Mật khẩu:</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                    <input type="password" id="passwordInput" name="Password" class="form-control border-start-0" 
+                           placeholder="Nhập mật khẩu (123456)" required />
+                </div>
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger small" })
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input type="checkbox" name="RememberMe" id="rememberMe" class="form-check-input" value="true" />
+                    <label class="form-check-label small text-muted" for="rememberMe">Ghi nhớ đăng nhập</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3 mb-3 shadow-sm">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập hệ thống
+            </button>
+        }
+
+        <!-- Thao tác đăng nhập thử nghiệm nhanh -->
+        <div class="bg-light p-3 rounded-3 border">
+            <div class="small fw-bold text-muted mb-2 text-center">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Chọn nhanh vai trò để kiểm thử / báo cáo:
+            </div>
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="quickFill('admin', '123456')">
+                    👑 Quản trị viên (Admin)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning text-dark btn-quick" onclick="quickFill('staff', '123456')">
+                    🔧 Kỹ thuật viên (Staff)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success btn-quick" onclick="quickFill('SV001', '123456')">
+                    🎓 Sinh viên (SV001)
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">&copy; @DateTime.Now.Year KTX Manager &bull; Hệ thống quản lý nội trú</small>
+        </div>
+    </div>
+
+    <script>
+        function quickFill(user, pass) {
+            document.getElementById('usernameInput').value = user;
+            document.getElementById('passwordInput').value = pass;
+            document.getElementById('loginForm').submit();
+        }
+    </script>
+</body>
+</html>

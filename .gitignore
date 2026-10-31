@@ -1,0 +1,14 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+bin/
+obj/
+
+# NuGet packages (khôi phục bằng NuGet Restore)
+packages/
+
+# Du lieu JSON cu da import vao SQL
+*.json.imported

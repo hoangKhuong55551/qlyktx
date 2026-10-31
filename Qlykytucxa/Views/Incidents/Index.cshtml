@@ -1,0 +1,166 @@
+﻿@model IEnumerable<Qlykytucxa.Models.IncidentRequest>
+
+@{
+    ViewBag.Title = "Quản lý Sự cố & Bảo trì";
+    string searchString = ViewBag.SearchString as string ?? "";
+    string statusFilter = ViewBag.StatusFilter as string ?? "";
+    string categoryFilter = ViewBag.CategoryFilter as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-tools text-danger me-2"></i>Quản lý Sự cố & Bảo trì Ký túc xá
+                </h4>
+                <p class="text-muted mb-0 small">Tiếp nhận yêu cầu sửa chữa cơ sở vật chất, phân công thợ và theo dõi chi phí</p>
+            </div>
+            <a href="@Url.Action("Create")" class="btn btn-danger px-3 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Gửi Yêu cầu Báo hỏng
+            </a>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("Index", "Incidents", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0" 
+                               placeholder="Tìm số phòng, tiêu đề, người báo..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="Mới tiếp nhận" @(statusFilter == "Mới tiếp nhận" ? "selected" : "")>Mới tiếp nhận</option>
+                        <option value="Đang xử lý" @(statusFilter == "Đang xử lý" ? "selected" : "")>Đang xử lý</option>
+                        <option value="Đã hoàn thành" @(statusFilter == "Đã hoàn thành" ? "selected" : "")>Đã hoàn thành</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="categoryFilter" class="form-select">
+                        <option value="">-- Tất cả loại sự cố --</option>
+                        <option value="Điện" @(categoryFilter == "Điện" ? "selected" : "")>Hỏng hệ thống Điện</option>
+                        <option value="Nước" @(categoryFilter == "Nước" ? "selected" : "")>Hỏng hệ thống Nước</option>
+                        <option value="Điều hòa" @(categoryFilter == "Điều hòa" ? "selected" : "")>Điều hòa / Quạt</option>
+                        <option value="Giường tủ" @(categoryFilter == "Giường tủ" ? "selected" : "")>Giường, Tủ, Bàn học</option>
+                        <option value="Khác" @(categoryFilter == "Khác" ? "selected" : "")>Thiết bị khác</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">Lọc</button>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bảng danh sách sự cố -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Phòng</th>
+                        <th>Nội dung sự cố</th>
+                        <th>Phân loại</th>
+                        <th>Người báo & Thời gian</th>
+                        <th>Nhân viên phụ trách</th>
+                        <th>Chi phí</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary">
+                                    <i class="bi bi-door-closed me-1 text-secondary"></i>Phòng @item.RoomNumber
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@item.Title</div>
+                                    <small class="text-muted d-block" style="max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        @item.Description
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">@item.Category</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">@item.ReporterName</div>
+                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                        <i class="bi bi-clock me-1"></i>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                                <td>
+                                    @if (item.AssignedTo == "Chưa phân công")
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-25 text-secondary">Chưa phân công</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-semibold text-dark"><i class="bi bi-person-badge me-1"></i>@item.AssignedTo</span>
+                                    }
+                                </td>
+                                <td class="fw-bold text-danger">
+                                    @(item.Cost > 0 ? String.Format("{0:N0} đ", item.Cost) : "---")
+                                </td>
+                                <td>
+                                    @if (item.Status == "Đã hoàn thành")
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success">
+                                            <i class="bi bi-check2-circle me-1"></i>Đã hoàn thành
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đang xử lý")
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning">
+                                            <i class="bi bi-hourglass-split me-1"></i>Đang xử lý
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Mới tiếp nhận
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Edit", new { id = item.Id })" class="btn btn-outline-primary" title="Cập nhật tiến độ & Phân công">
+                                            <i class="bi bi-pencil-square"></i> Xử lý
+                                        </a>
+                                        @using (Html.BeginForm("Delete", "Incidents", new { id = item.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa"
+                                                    onclick="return confirm('Xác nhận xóa bản ghi sự cố này?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-check-circle fs-2 text-success d-block mb-2"></i>
+                                Không có sự cố hay yêu cầu sửa chữa nào!
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

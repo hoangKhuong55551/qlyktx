@@ -1,0 +1,86 @@
+﻿@model IEnumerable<Qlykytucxa.Models.Announcement>
+@{
+    ViewBag.Title = "Bảng tin & Thông báo KTX";
+    string categoryFilter = ViewBag.CategoryFilter as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-megaphone-fill text-primary me-2"></i>Bảng tin & Thông báo Ký túc xá
+                </h4>
+                <p class="text-muted mb-0 small">Đăng tải và quản lý các thông báo quan trọng gửi tới toàn thể sinh viên nội trú</p>
+            </div>
+            <a href="@Url.Action("Create", "Announcements")" class="btn btn-primary px-3 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Đăng thông báo mới
+            </a>
+        </div>
+
+        <!-- Bộ lọc danh mục -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="@Url.Action("Index", "Announcements")" class="btn btn-sm @(string.IsNullOrEmpty(categoryFilter) ? "btn-dark" : "btn-outline-secondary")">
+                Tất cả
+            </a>
+            <a href="@Url.Action("Index", "Announcements", new { categoryFilter = "Khẩn cấp" })" class="btn btn-sm @(categoryFilter == "Khẩn cấp" ? "btn-danger" : "btn-outline-danger")">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Khẩn cấp
+            </a>
+            <a href="@Url.Action("Index", "Announcements", new { categoryFilter = "Bảo trì" })" class="btn btn-sm @(categoryFilter == "Bảo trì" ? "btn-warning text-dark" : "btn-outline-warning text-dark")">
+                Bảo trì điện nước
+            </a>
+            <a href="@Url.Action("Index", "Announcements", new { categoryFilter = "Điện nước" })" class="btn btn-sm @(categoryFilter == "Điện nước" ? "btn-info text-dark" : "btn-outline-info text-dark")">
+                Hóa đơn Điện Nước
+            </a>
+            <a href="@Url.Action("Index", "Announcements", new { categoryFilter = "Vệ sinh" })" class="btn btn-sm @(categoryFilter == "Vệ sinh" ? "btn-success" : "btn-outline-success")">
+                Vệ sinh & Nội quy
+            </a>
+        </div>
+
+        <!-- Danh sách thông báo dạng Card -->
+        <div class="row g-3">
+            @if (Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    string priorityBadge = item.Priority == "Khẩn cấp" ? "bg-danger" : (item.Priority == "Quan trọng" ? "bg-warning text-dark" : "bg-secondary");
+                    <div class="col-12">
+                        <div class="card border rounded-3 p-3 @(item.Priority == "Khẩn cấp" ? "border-danger border-opacity-50" : "")">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div>
+                                    <span class="badge @priorityBadge me-1">@item.Priority</span>
+                                    <span class="badge bg-light text-dark border me-2">@item.Category</span>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-clock me-1"></i>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm") &bull; Bởi <strong>@item.AuthorName</strong>
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <a href="@Url.Action("Edit", "Announcements", new { id = item.Id })" class="btn btn-sm btn-outline-primary" title="Sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @using (Html.BeginForm("Delete", "Announcements", new { id = item.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn gỡ thông báo này khỏi bảng tin?');">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2">@item.Title</h5>
+                            <p class="text-secondary mb-0" style="white-space: pre-line; line-height: 1.6;">@item.Content</p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="bi bi-bell-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                    Không có thông báo nào trong danh mục này.
+                </div>
+            }
+        </div>
+    </div>
+</div>

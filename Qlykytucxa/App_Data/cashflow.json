@@ -1,0 +1,46 @@
+[
+  {
+    "Id": 1,
+    "TransactionDate": "2026-10-08T04:36:51.0891944+07:00",
+    "Type": "Thu",
+    "Category": "Tiền phòng",
+    "Amount": 1500000.0,
+    "RelatedPerson": "Nguyễn Văn An (SV001)",
+    "RoomNumber": "A101",
+    "Description": "Thu tiền phòng học kỳ 1 (Phòng A101)",
+    "PaymentMethod": "Chuyển khoản VietQR"
+  },
+  {
+    "Id": 2,
+    "TransactionDate": "2026-10-10T04:36:51.0891944+07:00",
+    "Type": "Thu",
+    "Category": "Tiền phòng",
+    "Amount": 1500000.0,
+    "RelatedPerson": "Trần Quốc Bảo (SV002)",
+    "RoomNumber": "A101",
+    "Description": "Thu tiền phòng học kỳ 1 (Phòng A101)",
+    "PaymentMethod": "Tiền mặt"
+  },
+  {
+    "Id": 3,
+    "TransactionDate": "2026-10-18T04:36:51.0891944+07:00",
+    "Type": "Chi",
+    "Category": "Chi bảo trì",
+    "Amount": 350000.0,
+    "RelatedPerson": "Chú Hùng (Thợ điện nước)",
+    "RoomNumber": "A102",
+    "Description": "Chi phí thay van vòi nước và dây cấp nước phòng A102",
+    "PaymentMethod": "Tiền mặt"
+  },
+  {
+    "Id": 4,
+    "TransactionDate": "2026-10-23T04:36:51.0891944+07:00",
+    "Type": "Chi",
+    "Category": "Chi mua sắm vật tư",
+    "Amount": 850000.0,
+    "RelatedPerson": "Cửa hàng Điện tử Dân sinh",
+    "RoomNumber": "Tòa A",
+    "Description": "Mua 10 bóng đèn tuýp LED và 5 atomat thay thế định kỳ",
+    "PaymentMethod": "Chuyển khoản"
+  }
+]

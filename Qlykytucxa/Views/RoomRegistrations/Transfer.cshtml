@@ -1,0 +1,105 @@
+﻿@{
+    ViewBag.Title = "Chuyển phòng Ký túc xá";
+    var activeRegistrations = ViewBag.ActiveRegistrations as List<Qlykytucxa.Models.RoomRegistrations> ?? new List<Qlykytucxa.Models.RoomRegistrations>();
+    var availableRooms = ViewBag.AvailableRooms as List<Qlykytucxa.Models.Rooms> ?? new List<Qlykytucxa.Models.Rooms>();
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <h4 class="fw-bold text-primary mb-1">
+                    <i class="bi bi-arrow-left-right me-2"></i>Chuyển phòng Ký túc xá
+                </h4>
+                <p class="text-muted mb-0 small">
+                    Hệ thống sẽ tự động cập nhật sĩ số phòng cũ, phòng mới và lưu lại lịch sử nội trú của sinh viên.
+                </p>
+            </div>
+            <a href="@Url.Action("Index", "RoomRegistrations")" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        @if (!activeRegistrations.Any())
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill fs-5"></i>
+                <div>Hiện tại không có sinh viên nào đang nội trú trong KTX để thực hiện chuyển phòng.</div>
+            </div>
+        }
+        else if (!availableRooms.Any())
+        {
+            <div class="alert alert-danger d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                <div>Tất cả các phòng trong KTX hiện đã đầy, không còn chỗ trống để chuyển sinh viên sang!</div>
+            </div>
+        }
+        else
+        {
+            using (Html.BeginForm("Transfer", "RoomRegistrations", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 border h-100">
+                            <h6 class="fw-bold text-dark mb-3">
+                                <span class="badge bg-primary me-2">1</span> Chọn sinh viên cần chuyển phòng
+                            </h6>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Sinh viên & Phòng hiện tại:</label>
+                                <select name="registrationId" class="form-select form-select-lg" required>
+                                    <option value="">-- Chọn sinh viên đang ở --</option>
+                                    @foreach (var reg in activeRegistrations)
+                                    {
+                                        <option value="@reg.RegistrationId">
+                                            @reg.Students.StudentCode - @reg.Students.FullName (Đang ở: Phòng @(reg.Rooms != null ? reg.Rooms.RoomNumber : "N/A"))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="alert alert-info py-2 px-3 small mb-0">
+                                <i class="bi bi-info-circle me-1"></i> Chỉ hiển thị các sinh viên đang có trạng thái <strong>"Đang ở"</strong>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 border h-100">
+                            <h6 class="fw-bold text-dark mb-3">
+                                <span class="badge bg-success me-2">2</span> Chọn phòng chuyển đến
+                            </h6>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Phòng mới (còn chỗ trống):</label>
+                                <select name="newRoomId" class="form-select form-select-lg" required>
+                                    <option value="">-- Chọn phòng đích --</option>
+                                    @foreach (var r in availableRooms)
+                                    {
+                                        int free = r.MaxCapacity - (r.CurrentOccupancy ?? 0);
+                                        <option value="@r.RoomId">
+                                            Phòng @r.RoomNumber (@r.RoomType - Còn trống @free chỗ / Giá @String.Format("{0:N0} đ", r.RoomPrice))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="alert alert-success py-2 px-3 small mb-0">
+                                <i class="bi bi-check-circle me-1"></i> Chỉ hiển thị các phòng hiện còn chỗ trống.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 text-end pt-3 border-top">
+                        <button type="submit" class="btn btn-primary btn-lg px-4"
+                                onclick="return confirm('Bạn có chắc chắn muốn thực hiện chuyển phòng cho sinh viên này?');">
+                            <i class="bi bi-check2-circle me-1"></i> Xác nhận Chuyển phòng
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

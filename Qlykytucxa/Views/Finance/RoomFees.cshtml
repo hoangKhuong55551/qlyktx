@@ -1,0 +1,170 @@
+﻿@model IEnumerable<Qlykytucxa.Models.RoomFeePayment>
+@{
+    ViewBag.Title = "Quản lý Thu Tiền Phòng KTX";
+    string searchString = ViewBag.SearchString as string ?? "";
+    string statusFilter = ViewBag.StatusFilter as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-cash-coin text-primary me-2"></i>Quản lý Thu Tiền Phòng KTX
+                </h4>
+                <p class="text-muted mb-0 small">Theo dõi tình hình nộp tiền thuê phòng của sinh viên, in phiếu thu và quét mã VietQR</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("Index", "Finance")" class="btn btn-outline-secondary px-3 shadow-sm">
+                    <i class="bi bi-wallet2 me-1"></i> Xem Báo cáo Thu Chi
+                </a>
+            </div>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("RoomFees", "Finance", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0" 
+                               placeholder="Tìm theo Mã SV, Họ tên, Số phòng..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">-- Tất cả trạng thái đóng tiền --</option>
+                        <option value="unpaid" @(statusFilter == "unpaid" ? "selected" : "")>Chưa nộp tiền (Công nợ)</option>
+                        <option value="paid" @(statusFilter == "paid" ? "selected" : "")>Đã hoàn thành</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">Lọc</button>
+                    <a href="@Url.Action("RoomFees", "Finance")" class="btn btn-outline-secondary" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bảng danh sách tiền phòng -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Mã SV</th>
+                        <th>Họ và tên</th>
+                        <th>Phòng</th>
+                        <th>Kỳ thu tiền</th>
+                        <th>Số tiền phòng</th>
+                        <th>Hạn nộp</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary">@item.StudentCode</td>
+                                <td class="fw-semibold">@item.StudentName</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        <i class="bi bi-door-open me-1"></i>P.@item.RoomNumber
+                                    </span>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@item.SemesterPeriod</span></td>
+                                <td class="fw-bold text-danger">@item.Amount.ToString("N0") VNĐ</td>
+                                <td>@item.DueDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (item.IsPaid)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                            <i class="bi bi-check-circle me-1"></i>Đã đóng (@item.PaymentMethod)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                            <i class="bi bi-clock-history me-1"></i>Chưa nộp
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="d-inline-flex gap-1 align-items-center">
+                                        <!-- In phiếu thu / VietQR -->
+                                        <a href="@Url.Action("PrintRoomReceipt", "Finance", new { id = item.Id })" 
+                                           class="btn btn-sm btn-outline-dark" title="In phiếu thu tiền phòng / VietQR" target="_blank">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+
+                                        @if (!item.IsPaid)
+                                        {
+                                            <!-- Nút mở modal thu tiền -->
+                                            <button type="button" class="btn btn-sm btn-success" 
+                                                    data-bs-toggle="modal" data-bs-target="#collectModal-@item.Id">
+                                                <i class="bi bi-cash me-1"></i>Thu tiền
+                                            </button>
+
+                                            <!-- Modal thu tiền phòng -->
+                                            <div class="modal fade text-start" id="collectModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        @using (Html.BeginForm("CollectRoomFee", "Finance", FormMethod.Post))
+                                                        {
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title fw-bold text-success">
+                                                                    <i class="bi bi-cash-coin me-2"></i>Xác nhận Thu Tiền Phòng KTX
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p class="mb-2">Sinh viên: <strong>@item.StudentName</strong> (@item.StudentCode)</p>
+                                                                <p class="mb-2">Phòng: <strong>@item.RoomNumber</strong></p>
+                                                                <p class="mb-3">Số tiền thu: <strong class="text-danger fs-5">@item.Amount.ToString("N0") VNĐ</strong></p>
+
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold">Phương thức thanh toán:</label>
+                                                                    <select name="paymentMethod" class="form-select">
+                                                                        <option value="Tiền mặt">Tiền mặt tại văn phòng KTX</option>
+                                                                        <option value="Chuyển khoản VietQR">Chuyển khoản ngân hàng (VietQR)</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="alert alert-info py-2 small mb-0">
+                                                                    <i class="bi bi-info-circle me-1"></i> Số tiền này sẽ tự động được ghi nhận một bút toán Thu vào <strong>Sổ Quỹ Thu Chi KTX</strong>.
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                                <button type="submit" class="btn btn-success fw-bold">Xác nhận Đã Thu Tiền</button>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                Không tìm thấy dữ liệu thu tiền phòng nào.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

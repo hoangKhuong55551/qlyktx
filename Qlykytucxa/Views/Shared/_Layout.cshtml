@@ -1,0 +1,465 @@
+﻿@{
+    var userSession = Session["User"] as Qlykytucxa.Models.UserSession;
+    string currentRole = userSession != null ? userSession.Role : (Session["Role"] as string ?? "Admin");
+    string currentName = userSession != null ? userSession.FullName : (Session["FullName"] as string ?? "Quản trị viên");
+    string avatarText = currentRole == "Student" ? "SV" : (currentRole == "Staff" ? "KT" : "AD");
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Hệ Thống Quản Lý Ký Túc Xá</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    
+    <!-- Google Fonts & Bootstrap Icons & Chart.js -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 78px;
+            --topbar-height: 64px;
+            --primary-navy: #1e293b;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --sidebar-active: #3b82f6;
+            --body-bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--body-bg);
+            color: #1e293b;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Wrapper */
+        #wrapper {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: #94a3b8;
+            flex-shrink: 0;
+            transition: all 0.25s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        #sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        #sidebar.collapsed .sidebar-brand-text,
+        #sidebar.collapsed .nav-text,
+        #sidebar.collapsed .sidebar-heading,
+        #sidebar.collapsed .badge-count {
+            display: none !important;
+        }
+
+        #sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.75rem 0;
+        }
+
+        #sidebar.collapsed .nav-link i {
+            margin: 0 !important;
+            font-size: 1.35rem;
+        }
+
+        .sidebar-brand {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 12px;
+        }
+
+        .sidebar-brand i {
+            font-size: 1.5rem;
+            color: #38bdf8;
+        }
+
+        .sidebar-menu {
+            padding: 1rem 0.75rem;
+            list-style: none;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-heading {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            padding: 0.75rem 0.75rem 0.25rem;
+        }
+
+        .nav-item {
+            margin-bottom: 4px;
+        }
+
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.65rem 0.85rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.925rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link-custom i {
+            font-size: 1.15rem;
+            width: 22px;
+            text-align: center;
+            color: #94a3b8;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link-custom:hover {
+            color: #ffffff;
+            background-color: var(--sidebar-hover);
+        }
+
+        .nav-link-custom:hover i {
+            color: #38bdf8;
+        }
+
+        .nav-link-custom.active {
+            color: #ffffff;
+            background-color: #2563eb;
+            font-weight: 600;
+        }
+
+        .nav-link-custom.active i {
+            color: #ffffff;
+        }
+
+        /* Main Content Container */
+        #content-wrapper {
+            flex-grow: 1;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.25s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 100vh;
+        }
+
+        #content-wrapper.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* Top Navbar */
+        .topbar {
+            height: var(--topbar-height);
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+
+        .topbar-btn {
+            background: none;
+            border: none;
+            font-size: 1.35rem;
+            color: #475569;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .topbar-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 10px;
+            border-radius: 30px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .admin-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Content Area */
+        .main-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+        }
+
+        /* Flash Message Alert */
+        .alert-dismissible .btn-close {
+            padding: 1rem;
+        }
+
+        /* Responsive Mobile */
+        @@media (max-width: 768px) {
+            #sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            #sidebar.show-mobile {
+                margin-left: 0;
+            }
+            #content-wrapper {
+                margin-left: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <a href="@Url.Action("Index", "Home")" class="sidebar-brand">
+                <i class="bi bi-buildings-fill"></i>
+                <span class="sidebar-brand-text">KTX MANAGER</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                @if (currentRole == "Student")
+                {
+                    <li class="sidebar-heading">Sinh viên Nội trú</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "StudentPortal")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "StudentPortal" && ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">
+                            <i class="bi bi-person-workspace"></i>
+                            <span class="nav-text">Cổng thông tin SV</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("ReportIncident", "StudentPortal")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "ReportIncident" ? "active" : "")">
+                            <i class="bi bi-tools"></i>
+                            <span class="nav-text">Báo hỏng phòng</span>
+                        </a>
+                    </li>
+                }
+                else if (currentRole == "Staff")
+                {
+                    <li class="sidebar-heading">Kỹ thuật viên KTX</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Incidents")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Incidents" ? "active" : "")">
+                            <i class="bi bi-tools"></i>
+                            <span class="nav-text">Báo hỏng & Sửa chữa</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Announcements")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Announcements" ? "active" : "")">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span class="nav-text">Bảng tin KTX</span>
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li class="sidebar-heading">Bảng điều khiển</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Home")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Home" ? "active" : "")">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            <span class="nav-text">Tổng quan</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-heading">Quản lý nội trú</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Students")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Students" ? "active" : "")">
+                            <i class="bi bi-people-fill"></i>
+                            <span class="nav-text">Quản lý Sinh viên</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Rooms")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Rooms" ? "active" : "")">
+                            <i class="bi bi-door-open-fill"></i>
+                            <span class="nav-text">Tòa nhà & Phòng</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "RoomRegistrations")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "RoomRegistrations" && ViewContext.RouteData.Values["action"].ToString() != "Transfer" ? "active" : "")">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                            <span class="nav-text">Hợp đồng Nội trú</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Transfer", "RoomRegistrations")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "Transfer" ? "active" : "")">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span class="nav-text">Chuyển phòng KTX</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-heading">Tài chính & Dịch vụ</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Finance")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Finance" && ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">
+                            <i class="bi bi-wallet2"></i>
+                            <span class="nav-text">Báo cáo Thu - Chi</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("RoomFees", "Finance")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "RoomFees" ? "active" : "")">
+                            <i class="bi bi-cash-coin"></i>
+                            <span class="nav-text">Thu Tiền Phòng</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "UtilityBills")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "UtilityBills" ? "active" : "")">
+                            <i class="bi bi-receipt-cutoff"></i>
+                            <span class="nav-text">Hóa đơn Điện Nước</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-heading">Bảo trì & Bảng tin</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Incidents")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Incidents" ? "active" : "")">
+                            <i class="bi bi-tools"></i>
+                            <span class="nav-text">Báo hỏng & Sửa chữa</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "Announcements")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "Announcements" ? "active" : "")">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span class="nav-text">Bảng tin Thông báo</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-heading">Cổng Sinh viên</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "StudentPortal")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "StudentPortal" ? "active" : "")">
+                            <i class="bi bi-person-badge"></i>
+                            <span class="nav-text">Xem Cổng SV</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="p-3 text-center border-top border-secondary border-opacity-25">
+                <small class="text-muted d-block">&copy; @DateTime.Now.Year KTX Pro</small>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div id="content-wrapper">
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="d-flex align-items-center gap-2">
+                    <button id="sidebarToggle" class="topbar-btn" title="Đóng/Mở menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <span class="fw-semibold text-secondary d-none d-sm-inline">
+                        Hệ thống Quản lý Ký túc xá
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-muted small d-none d-md-block">
+                        <i class="bi bi-calendar3 me-1"></i> @DateTime.Now.ToString("dd/MM/yyyy")
+                    </div>
+                    <div class="admin-profile d-flex align-items-center">
+                        <div class="admin-avatar me-2">@avatarText</div>
+                        <div class="d-none d-sm-block text-start lh-1 pe-2">
+                            <span class="d-block fw-semibold" style="font-size: 0.85rem;">@currentName</span>
+                            <small class="text-primary fw-bold" style="font-size: 0.725rem;">Vai trò: @currentRole</small>
+                        </div>
+                        <a href="@Url.Action("Logout", "Account")" class="btn btn-sm btn-outline-danger ms-2" title="Đăng xuất">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Body Content -->
+            <main class="main-content">
+                @* Thông báo Toast / Alert động từ TempData *@
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <div>@TempData["Success"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div>@TempData["Error"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+
+    <script>
+        // Toggle Sidebar Script
+        $(document).ready(function () {
+            $('#sidebarToggle').on('click', function () {
+                if ($(window).width() <= 768) {
+                    $('#sidebar').toggleClass('show-mobile');
+                } else {
+                    $('#sidebar').toggleClass('collapsed');
+                    $('#content-wrapper').toggleClass('expanded');
+                }
+            });
+        });
+    </script>
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,168 @@
+﻿@model IEnumerable<Qlykytucxa.Models.UtilityBills>
+
+@{
+    ViewBag.Title = "Quản lý Hóa đơn Điện Nước";
+    string searchString = ViewBag.SearchString as string ?? "";
+    int? monthFilter = ViewBag.MonthFilter as int?;
+    int? yearFilter = ViewBag.YearFilter as int?;
+    string paymentStatus = ViewBag.PaymentStatus as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-receipt-cutoff text-danger me-2"></i>Quản lý Hóa đơn Điện Nước
+                </h4>
+                <p class="text-muted mb-0 small">Theo dõi chỉ số tiêu thụ, thanh toán VietQR và xuất báo cáo doanh thu</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("ExportToExcel", "UtilityBills", new { searchString = searchString, monthFilter = monthFilter, yearFilter = yearFilter, paymentStatus = paymentStatus })" 
+                   class="btn btn-outline-success px-3 shadow-sm" title="Xuất danh sách ra file CSV tương thích Excel">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Xuất Excel (CSV)
+                </a>
+                <a href="@Url.Action("Create", "UtilityBills")" class="btn btn-success px-3 shadow-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Lập Hóa đơn mới
+                </a>
+            </div>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("Index", "UtilityBills", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0" 
+                               placeholder="Tìm số phòng..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select name="monthFilter" class="form-select">
+                        <option value="">-- Tất cả tháng --</option>
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" @(monthFilter == m ? "selected" : "")>Tháng @m</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="yearFilter" class="form-select">
+                        <option value="">-- Tất cả năm --</option>
+                        @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                        {
+                            <option value="@y" @(yearFilter == y ? "selected" : "")>Năm @y</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="paymentStatus" class="form-select">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="paid" @(paymentStatus == "paid" ? "selected" : "")>Đã thanh toán</option>
+                        <option value="unpaid" @(paymentStatus == "unpaid" ? "selected" : "")>Chưa thanh toán</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">Lọc</button>
+                    <a href="@Url.Action("Index", "UtilityBills")" class="btn btn-outline-secondary" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bảng hóa đơn -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Phòng</th>
+                        <th>Kỳ hóa đơn</th>
+                        <th>Chỉ số Điện (Cũ &rarr; Mới)</th>
+                        <th>Chỉ số Nước (Cũ &rarr; Mới)</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            int eDiff = item.NewElectricIndex - item.OldElectricIndex;
+                            int wDiff = item.NewWaterIndex - item.OldWaterIndex;
+
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary">Phòng @item.Rooms.RoomNumber</td>
+                                <td><span class="badge bg-light text-dark border">Tháng @item.BillingMonth/@item.BillingYear</span></td>
+                                <td>@item.OldElectricIndex &rarr; @item.NewElectricIndex (<strong>@eDiff</strong> kWh)</td>
+                                <td>@item.OldWaterIndex &rarr; @item.NewWaterIndex (<strong>@wDiff</strong> m&sup3;)</td>
+                                <td class="fw-bold text-danger">@String.Format("{0:N0} đ", item.TotalAmount)</td>
+                                <td>
+                                    @if (item.IsPaid)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                            <i class="bi bi-check-circle me-1"></i>Đã thanh toán
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                            <i class="bi bi-clock-history me-1"></i>Chưa thanh toán
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="d-inline-flex gap-1 align-items-center">
+                                        <!-- In hóa đơn / VietQR -->
+                                        <a href="@Url.Action("PrintInvoice", new { id = item.BillId })" 
+                                           class="btn btn-sm btn-outline-dark" title="In phiếu thu / VietQR" target="_blank">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+
+                                        @if (!item.IsPaid)
+                                        {
+                                            using (Html.BeginForm("PayBill", "UtilityBills", new { id = item.BillId }, FormMethod.Post, new { style = "display:inline;" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="paymentMethod" value="Tiền mặt" />
+                                                <button type="submit" class="btn btn-sm btn-success" title="Xác nhận thu tiền mặt"
+                                                        onclick="return confirm('Xác nhận thu tiền phòng @item.Rooms.RoomNumber số tiền @item.TotalAmount.ToString("N0") VNĐ?');">
+                                                    <i class="bi bi-cash-coin me-1"></i>Thu tiền
+                                                </button>
+                                            }
+                                        }
+
+                                        <!-- Các nút CRUD cơ bản -->
+                                        <a href="@Url.Action("Edit", new { id = item.BillId })" class="btn btn-sm btn-outline-primary" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Details", new { id = item.BillId })" class="btn btn-sm btn-outline-info" title="Chi tiết">
+                                            <i class="bi bi-info-circle"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = item.BillId })" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                Không tìm thấy hóa đơn nào phù hợp.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

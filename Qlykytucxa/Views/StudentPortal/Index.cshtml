@@ -1,0 +1,234 @@
+﻿@{
+    ViewBag.Title = "Cổng thông tin Sinh viên KTX";
+    var student = ViewBag.Student as Qlykytucxa.Models.Students;
+    var reg = ViewBag.ActiveRegistration as Qlykytucxa.Models.RoomRegistrations;
+    var roommates = ViewBag.Roommates as List<Qlykytucxa.Models.Students> ?? new List<Qlykytucxa.Models.Students>();
+    var bills = ViewBag.Bills as List<Qlykytucxa.Models.UtilityBills> ?? new List<Qlykytucxa.Models.UtilityBills>();
+    var incidents = ViewBag.Incidents as List<Qlykytucxa.Models.IncidentRequest> ?? new List<Qlykytucxa.Models.IncidentRequest>();
+    var announcements = ViewBag.Announcements as List<Qlykytucxa.Models.Announcement> ?? new List<Qlykytucxa.Models.Announcement>();
+
+    string buildingName = (reg != null && reg.Rooms != null && !string.IsNullOrEmpty(reg.Rooms.RoomNumber) && char.IsLetter(reg.Rooms.RoomNumber[0])) 
+        ? ("Tòa " + reg.Rooms.RoomNumber[0]) 
+        : "Khu KTX";
+}
+
+<!-- Welcome Student Banner -->
+<div class="card border-0 rounded-4 shadow-sm mb-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #fff;">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-light text-primary px-3 py-1 mb-2 fw-semibold">CỔNG THÔNG TIN SINH VIÊN</span>
+                <h3 class="fw-bold mb-1">Xin chào, @student.FullName!</h3>
+                <p class="mb-0 text-white-50">
+                    Mã SV: <strong class="text-white">@student.StudentCode</strong> &bull; Lớp: <strong class="text-white">@(student.ClassName ?? "Chưa rõ")</strong> &bull; SĐT: <strong class="text-white">@(student.Phone ?? "Chưa có")</strong>
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                @if (reg != null)
+                {
+                    <a href="@Url.Action("PrintContract", "RoomRegistrations", new { id = reg.RegistrationId })" class="btn btn-light text-primary fw-semibold px-3 shadow-sm" target="_blank">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> In / Tải Hợp đồng KTX
+                    </a>
+                }
+                <a href="@Url.Action("ReportIncident", "StudentPortal")" class="btn btn-warning text-dark fw-semibold px-3 shadow-sm">
+                    <i class="bi bi-tools me-1"></i> Báo hỏng thiết bị
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Cột trái: Thông tin phòng & Hóa đơn -->
+    <div class="col-lg-7">
+        <!-- 1. Thông tin chỗ ở nội trú -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-door-open-fill text-primary me-2"></i>Thông tin Phòng nội trú
+                </h5>
+
+                @if (reg != null && reg.Rooms != null)
+                {
+                    <div class="row g-3 bg-light p-3 rounded-3 mb-3 border">
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Phòng số:</span>
+                            <span class="fw-bold fs-5 text-primary">Phòng @reg.Rooms.RoomNumber - @buildingName</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Loại phòng & Đơn giá:</span>
+                            <span class="fw-semibold">@reg.Rooms.RoomType (@reg.Rooms.RoomPrice.ToString("N0") đ/tháng)</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Ngày nhận phòng:</span>
+                            <span class="fw-semibold">@reg.CheckInDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Hạn kết thúc hợp đồng:</span>
+                            <span class="fw-bold text-danger">@(reg.CheckOutDate.HasValue ? reg.CheckOutDate.Value.ToString("dd/MM/yyyy") : "Theo kỳ học")</span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-secondary mb-2 small text-uppercase">Bạn cùng phòng (@(roommates.Count + 1)/@reg.Rooms.MaxCapacity người):</h6>
+                    <ul class="list-group list-group-flush border rounded-3 mb-0">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="fw-bold text-primary">@student.FullName</span>
+                                <span class="badge bg-primary ms-1">Bạn</span>
+                            </div>
+                            <small class="text-muted">@student.Phone</small>
+                        </li>
+                        @foreach (var rm in roommates)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <span class="fw-semibold">@rm.FullName</span>
+                                    <small class="text-muted ms-1">(@rm.StudentCode)</small>
+                                </div>
+                                <small class="text-muted">@(string.IsNullOrEmpty(rm.Phone) ? "Chưa có SĐT" : rm.Phone)</small>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Bạn hiện chưa được xếp phòng hoặc hợp đồng đã kết thúc. Vui lòng liên hệ Ban Quản lý KTX.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 2. Hóa đơn Tiền Điện Nước của phòng -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-receipt-cutoff text-danger me-2"></i>Hóa đơn Điện Nước Phòng
+                    </h5>
+                    <span class="badge bg-light text-secondary border">Mới nhất</span>
+                </div>
+
+                @if (bills.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kỳ hóa đơn</th>
+                                    <th>Điện / Nước</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Quét VietQR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in bills)
+                                {
+                                    int eUsed = b.NewElectricIndex - b.OldElectricIndex;
+                                    int wUsed = b.NewWaterIndex - b.OldWaterIndex;
+                                    <tr>
+                                        <td class="fw-bold">Tháng @b.BillingMonth/@b.BillingYear</td>
+                                        <td>@eUsed kWh / @wUsed m&sup3;</td>
+                                        <td class="fw-bold text-danger">@b.TotalAmount.ToString("N0") đ</td>
+                                        <td>
+                                            @if (b.IsPaid)
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Đã đóng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">Chưa thanh toán</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="@Url.Action("PrintInvoice", "UtilityBills", new { id = b.BillId })" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-qr-code me-1"></i> Quét mã
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-3 mb-0">Phòng chưa phát sinh hóa đơn nào.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột phải: Bảng tin KTX & Lịch sử báo hỏng -->
+    <div class="col-lg-5">
+        <!-- 3. Bảng tin Thông báo từ BQL KTX -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-megaphone-fill text-warning me-2"></i>Thông báo Ký túc xá
+                </h5>
+
+                @if (announcements.Any())
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var ann in announcements)
+                        {
+                            string badgeClass = ann.Priority == "Khẩn cấp" ? "bg-danger" : (ann.Priority == "Quan trọng" ? "bg-warning text-dark" : "bg-secondary");
+                            <div class="border rounded-3 p-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge @badgeClass" style="font-size: 0.725rem;">@ann.Priority</span>
+                                    <small class="text-muted">@ann.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">@ann.Title</h6>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">@ann.Content</p>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-3 mb-0">Hiện chưa có thông báo mới.</p>
+                }
+            </div>
+        </div>
+
+        <!-- 4. Lịch sử Yêu cầu Báo hỏng của phòng -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-tools text-primary me-2"></i>Báo hỏng phòng đã gửi
+                    </h5>
+                    <a href="@Url.Action("ReportIncident", "StudentPortal")" class="btn btn-sm btn-outline-primary">
+                        + Gửi mới
+                    </a>
+                </div>
+
+                @if (incidents.Any())
+                {
+                    <ul class="list-group list-group-flush border rounded-3">
+                        @foreach (var inc in incidents)
+                        {
+                            string sttClass = inc.Status == "Đã hoàn thành" ? "bg-success" : (inc.Status == "Đang xử lý" ? "bg-warning text-dark" : "bg-danger");
+                            <li class="list-group-item py-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark">@inc.Title</span>
+                                    <span class="badge @sttClass">@inc.Status</span>
+                                </div>
+                                <div class="text-muted small mb-1">@inc.Description</div>
+                                <div class="small text-secondary">
+                                    <i class="bi bi-person me-1"></i>Người xử lý: <strong>@(string.IsNullOrEmpty(inc.AssignedTo) ? "Đang xếp thợ" : inc.AssignedTo)</strong> &bull; Ngày: @inc.CreatedAt.ToString("dd/MM/yyyy")
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-3 mb-0">Phòng của bạn chưa gửi báo hỏng nào.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

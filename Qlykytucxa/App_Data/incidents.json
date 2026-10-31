@@ -1,0 +1,44 @@
+[
+  {
+    "Id": 1,
+    "RoomId": 1,
+    "RoomNumber": "A101",
+    "Title": "Hỏng vòi hoa sen nhà tắm",
+    "Category": "Nước",
+    "Description": "Vòi nước bị rò rỉ nước liên tục, cần thay van mới.",
+    "ReporterName": "Nguyễn Văn An",
+    "CreatedAt": "2026-10-26T04:30:40.0719872+07:00",
+    "AssignedTo": "Chú Hùng (Thợ nước)",
+    "Status": "Đang xử lý",
+    "Cost": 150000.0,
+    "ResolvedAt": null
+  },
+  {
+    "Id": 2,
+    "RoomId": 2,
+    "RoomNumber": "A102",
+    "Title": "Điều hòa không mát, kêu to",
+    "Category": "Điều hòa",
+    "Description": "Bật 18 độ nhưng chỉ ra gió, cục nóng kêu rất to.",
+    "ReporterName": "Trần Thị Bình",
+    "CreatedAt": "2026-10-27T18:30:40.0719872+07:00",
+    "AssignedTo": "Chưa phân công",
+    "Status": "Mới tiếp nhận",
+    "Cost": 0.0,
+    "ResolvedAt": null
+  },
+  {
+    "Id": 3,
+    "RoomId": 3,
+    "RoomNumber": "B201",
+    "Title": "Cháy bóng đèn tuýp phòng ngủ",
+    "Category": "Điện",
+    "Description": "Bóng đèn nhấp nháy rồi tắt hẳn sáng nay.",
+    "ReporterName": "Lê Hoàng Long",
+    "CreatedAt": "2026-10-24T04:30:40.0719872+07:00",
+    "AssignedTo": "Chú Tuấn (Thợ điện)",
+    "Status": "Đã hoàn thành",
+    "Cost": 80000.0,
+    "ResolvedAt": "2026-10-25T04:30:40.0719872+07:00"
+  }
+]

@@ -1,0 +1,579 @@
+﻿@using Newtonsoft.Json
+@{
+    ViewBag.Title = "Bảng điều khiển Tổng quan";
+    var pendingBills = ViewBag.PendingBills as List<Qlykytucxa.Models.UtilityBills> ?? new List<Qlykytucxa.Models.UtilityBills>();
+    var expiringContracts = ViewBag.ExpiringContracts as List<Qlykytucxa.Models.RoomRegistrations> ?? new List<Qlykytucxa.Models.RoomRegistrations>();
+    var pendingIncidents = ViewBag.PendingIncidents as List<Qlykytucxa.Models.IncidentRequest> ?? new List<Qlykytucxa.Models.IncidentRequest>();
+    var announcements = ViewBag.Announcements as List<Qlykytucxa.Models.Announcement> ?? new List<Qlykytucxa.Models.Announcement>();
+
+    var buildingLabels = ViewBag.BuildingLabels as string[] ?? new string[0];
+    var buildingOccupied = ViewBag.BuildingOccupied as int[] ?? new int[0];
+    var buildingCapacity = ViewBag.BuildingCapacity as int[] ?? new int[0];
+
+    var financeLabels = ViewBag.FinanceLabels as string[] ?? new string[0];
+    var financeRevenue = ViewBag.FinanceRevenue as decimal[] ?? new decimal[0];
+    var financeDebt = ViewBag.FinanceDebt as decimal[] ?? new decimal[0];
+}
+
+<style>
+    /* Quick Actions Bar */
+    .quick-actions-bar {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        margin-bottom: 22px;
+    }
+    .quick-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 8px 16px;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .quick-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Dashboard Cards */
+    .stat-box {
+        border-radius: 16px;
+        padding: 20px 22px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        display: block;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-box:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    }
+    .stat-box .stat-icon {
+        font-size: 1.75rem;
+        line-height: 1;
+        margin-bottom: 12px;
+        display: inline-block;
+    }
+    .stat-box .stat-number {
+        font-size: 2.15rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 6px;
+    }
+    .stat-box .stat-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .stat-box .stat-desc {
+        font-size: 0.8rem;
+        opacity: 0.85;
+    }
+
+    /* Colors */
+    .box-blue {
+        background-color: #e8f4fd;
+        border: 1px solid #cce5fb;
+        color: #0369a1;
+    }
+    .box-blue .stat-icon { color: #0284c7; }
+
+    .box-green {
+        background-color: #eafaf1;
+        border: 1px solid #c7f3da;
+        color: #15803d;
+    }
+    .box-green .stat-icon { color: #16a34a; }
+
+    .box-yellow {
+        background-color: #fef8e7;
+        border: 1px solid #fdeec6;
+        color: #b45309;
+    }
+    .box-yellow .stat-icon { color: #d97706; }
+
+    .box-red {
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+    }
+    .box-red .stat-icon { color: #dc2626; }
+
+    .box-purple {
+        background-color: #f6eefe;
+        border: 1px solid #ecd9fc;
+        color: #7e22ce;
+    }
+    .box-purple .stat-icon { color: #9333ea; }
+
+    .box-cyan {
+        background-color: #ecfeff;
+        border: 1px solid #cffafe;
+        color: #0e7490;
+    }
+    .box-cyan .stat-icon { color: #0891b2; }
+
+    /* Dashboard Panels */
+    .dashboard-panel {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 22px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        height: 100%;
+    }
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .panel-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .room-dist-item {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+</style>
+
+<!-- Banner Thông Báo KTX Nổi Bật -->
+@if (announcements.Any())
+{
+    var latestAnn = announcements.First();
+    string alertType = latestAnn.Priority == "Khẩn cấp" ? "alert-danger" : (latestAnn.Priority == "Quan trọng" ? "alert-warning" : "alert-info");
+    <div class="alert @alertType alert-dismissible fade show shadow-sm rounded-4 mb-3 d-flex align-items-center justify-content-between p-3" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-megaphone-fill fs-5"></i>
+            <div>
+                <strong>[THÔNG BÁO KTX] @latestAnn.Title:</strong>
+                <span class="ms-1">@latestAnn.Content</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-3">
+            <a href="@Url.Action("Index", "Announcements")" class="btn btn-sm btn-outline-dark fw-semibold">
+                Xem tất cả thông báo &rarr;
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+}
+
+<!-- Thanh thao tác nhanh -->
+<div class="quick-actions-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div class="fw-bold text-dark d-flex align-items-center gap-2">
+        <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+        <span>Thao tác nhanh:</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="@Url.Action("Create", "Students")" class="quick-btn btn btn-outline-primary">
+            <i class="bi bi-person-plus-fill"></i> Thêm Sinh viên
+        </a>
+        <a href="@Url.Action("Create", "Rooms")" class="quick-btn btn btn-outline-info text-dark">
+            <i class="bi bi-door-open-fill"></i> Thêm Phòng mới
+        </a>
+        <a href="@Url.Action("Create", "RoomRegistrations")" class="quick-btn btn btn-outline-success">
+            <i class="bi bi-person-check-fill"></i> Xếp phòng KTX
+        </a>
+        <a href="@Url.Action("Transfer", "RoomRegistrations")" class="quick-btn btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-right"></i> Chuyển phòng
+        </a>
+        <a href="@Url.Action("Create", "UtilityBills")" class="quick-btn btn btn-outline-danger">
+            <i class="bi bi-receipt"></i> Lập Hóa đơn ĐN
+        </a>
+        <a href="@Url.Action("Create", "Incidents")" class="quick-btn btn btn-outline-warning text-dark">
+            <i class="bi bi-tools"></i> Báo hỏng thiết bị
+        </a>
+        <a href="@Url.Action("Create", "Announcements")" class="quick-btn btn btn-outline-dark">
+            <i class="bi bi-megaphone-fill"></i> Đăng thông báo
+        </a>
+    </div>
+</div>
+
+<!-- 1. Hàng Thống Kê Tổng Quan -->
+<div class="row g-3 mb-4">
+    <!-- Tổng sinh viên -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "Students")" class="stat-box box-blue">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-number">@ViewBag.TotalStudents</div>
+            <div class="stat-label">Tổng Sinh viên</div>
+            <div class="stat-desc text-muted">Hồ sơ sinh viên</div>
+        </a>
+    </div>
+
+    <!-- Tổng số phòng -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "Rooms")" class="stat-box box-green">
+            <div class="stat-icon"><i class="bi bi-door-closed-fill"></i></div>
+            <div class="stat-number">@ViewBag.TotalRooms</div>
+            <div class="stat-label">Tổng số Phòng</div>
+            <div class="stat-desc">Trống @ViewBag.AvailableSlots chỗ</div>
+        </a>
+    </div>
+
+    <!-- Tỷ lệ lấp đầy -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "Rooms")" class="stat-box box-purple">
+            <div class="stat-icon"><i class="bi bi-pie-chart-fill"></i></div>
+            <div class="stat-number">@ViewBag.OccupancyRate%</div>
+            <div class="stat-label">Tỷ lệ Lấp đầy</div>
+            <div class="stat-desc">@ViewBag.TotalOccupancy / @ViewBag.TotalCapacity chỗ</div>
+        </a>
+    </div>
+
+    <!-- Hợp đồng còn hiệu lực -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "RoomRegistrations")" class="stat-box box-yellow">
+            <div class="stat-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <div class="stat-number">@ViewBag.ActiveContracts</div>
+            <div class="stat-label">Hợp đồng Đang ở</div>
+            <div class="stat-desc">Đang lưu trú</div>
+        </a>
+    </div>
+
+    <!-- Hóa đơn chưa thanh toán -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "UtilityBills", new { paymentStatus = "unpaid" })" class="stat-box box-red">
+            <div class="stat-icon"><i class="bi bi-receipt-cutoff"></i></div>
+            <div class="stat-number">@ViewBag.UnpaidBills</div>
+            <div class="stat-label">Hóa đơn Nợ</div>
+            <div class="stat-desc text-danger fw-semibold">Cần thu tiền</div>
+        </a>
+    </div>
+
+    <!-- Công nợ điện nước -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <a href="@Url.Action("Index", "UtilityBills", new { paymentStatus = "unpaid" })" class="stat-box box-cyan">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-number" style="font-size: 1.5rem; padding-top: 8px;">@(((decimal)ViewBag.UnpaidAmount).ToString("N0")) đ</div>
+            <div class="stat-label">Tổng Công nợ</div>
+            <div class="stat-desc">Chưa thu hồi</div>
+        </a>
+    </div>
+</div>
+
+<!-- 2. Hàng Biểu Đồ Thống Kê Phân Tích -->
+<div class="row g-4 mb-4">
+    <!-- Biểu đồ 1: Tỷ lệ sử dụng phòng theo từng tòa -->
+    <div class="col-lg-6">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">
+                    <i class="bi bi-building-fill text-primary"></i> Tỷ lệ sử dụng phòng theo từng Tòa
+                </h5>
+                <span class="badge bg-primary bg-opacity-10 text-primary">Tòa nhà KTX</span>
+            </div>
+            <div style="position: relative; height: 260px;">
+                <canvas id="buildingOccupancyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ 2: Doanh thu & Công nợ 6 tháng -->
+    <div class="col-lg-6">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">
+                    <i class="bi bi-bar-chart-line-fill text-success"></i> Doanh thu & Công nợ (6 tháng gần nhất)
+                </h5>
+                <span class="badge bg-success bg-opacity-10 text-success">Tài chính Điện nước</span>
+            </div>
+            <div style="position: relative; height: 260px;">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Hàng Bảng Danh Sách Nghiệp Vụ Cần Xử Lý -->
+<div class="row g-4">
+    <!-- Cột 1: Hóa đơn chưa thanh toán -->
+    <div class="col-lg-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">
+                    <i class="bi bi-exclamation-circle-fill text-danger"></i> Hóa đơn chưa thanh toán
+                </h5>
+                <a href="@Url.Action("Index", "UtilityBills", new { paymentStatus = "unpaid" })" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.8rem;">
+                    Xem tất cả (@ViewBag.UnpaidBills)
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Phòng</th>
+                            <th>Kỳ</th>
+                            <th>Tiền nợ</th>
+                            <th class="text-end">In / Thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (pendingBills.Any())
+                        {
+                            foreach (var bill in pendingBills)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-primary">P.@bill.Rooms.RoomNumber</td>
+                                    <td>T@(bill.BillingMonth)/@bill.BillingYear</td>
+                                    <td class="text-danger fw-bold">@bill.TotalAmount.ToString("N0") đ</td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("PrintInvoice", "UtilityBills", new { id = bill.BillId })" class="btn btn-sm btn-outline-dark py-0 px-1" title="In phiếu thu / VietQR" target="_blank">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                        <a href="@Url.Action("Details", "UtilityBills", new { id = bill.BillId })" class="btn btn-sm btn-outline-info py-0 px-1" title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="bi bi-check-circle text-success me-1"></i>Tất cả hóa đơn đã được thanh toán!
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột 2: Hợp đồng sắp hết hạn -->
+    <div class="col-lg-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">
+                    <i class="bi bi-clock-history text-warning"></i> Hợp đồng sắp hết hạn
+                </h5>
+                <a href="@Url.Action("Index", "RoomRegistrations", new { expiryFilter = "expiring" })" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size: 0.8rem;">
+                    Xem tất cả
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sinh viên</th>
+                            <th>Phòng</th>
+                            <th>Hạn hết</th>
+                            <th class="text-end">Gia hạn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (expiringContracts.Any())
+                        {
+                            foreach (var reg in expiringContracts)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">@reg.Students.FullName</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">@reg.Students.StudentCode</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">P.@reg.Rooms.RoomNumber</span></td>
+                                    <td class="text-danger fw-semibold">
+                                        @(reg.CheckOutDate.HasValue ? reg.CheckOutDate.Value.ToString("dd/MM/yyyy") : "---")
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("Index", "RoomRegistrations", new { searchString = reg.Students.StudentCode })" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.785rem;">
+                                            Gia hạn
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Không có hợp đồng nào sắp hết hạn trong 30 ngày.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột 3: Yêu cầu sửa chữa & bảo trì đang chờ xử lý -->
+    <div class="col-lg-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">
+                    <i class="bi bi-tools text-primary"></i> Sự cố bảo trì cần xử lý
+                </h5>
+                <a href="@Url.Action("Index", "Incidents")" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;">
+                    Xem tất cả
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Phòng</th>
+                            <th>Nội dung sự cố</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Xử lý</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (pendingIncidents.Any())
+                        {
+                            foreach (var inc in pendingIncidents)
+                            {
+                                <tr>
+                                    <td class="fw-bold">@inc.RoomNumber</td>
+                                    <td>
+                                        <div class="fw-semibold text-truncate" style="max-width: 140px;" title="@inc.Title">@inc.Title</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">@inc.Category</div>
+                                    </td>
+                                    <td>
+                                        @if (inc.Status == "Mới tiếp nhận")
+                                        {
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">Mới</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Đang xử lý</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("Edit", "Incidents", new { id = inc.Id })" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.785rem;">
+                                            Sửa
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="bi bi-check-all text-success me-1"></i>Không có sự cố nào đang chờ xử lý!
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        // 1. Biểu đồ Cột Nhóm: Tỷ lệ sử dụng phòng theo từng Tòa
+        const bldCtx = document.getElementById('buildingOccupancyChart').getContext('2d');
+        const bldLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(buildingLabels));
+        const bldOccupied = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(buildingOccupied));
+        const bldCapacity = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(buildingCapacity));
+
+        new Chart(bldCtx, {
+            type: 'bar',
+            data: {
+                labels: bldLabels.length > 0 ? bldLabels : ['Chưa có tòa nhà'],
+                datasets: [
+                    {
+                        label: 'Số người đang ở',
+                        data: bldOccupied.length > 0 ? bldOccupied : [0],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Tổng sức chứa tối đa',
+                        data: bldCapacity.length > 0 ? bldCapacity : [0],
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans'" } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+
+        // 2. Biểu đồ Doanh thu & Công nợ 6 tháng
+        const finCtx = document.getElementById('financeChart').getContext('2d');
+        const finLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(financeLabels));
+        const finRev = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(financeRevenue));
+        const finDebt = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(financeDebt));
+
+        new Chart(finCtx, {
+            type: 'bar',
+            data: {
+                labels: finLabels.length > 0 ? finLabels : ['Chưa có dữ liệu'],
+                datasets: [
+                    {
+                        label: 'Doanh thu đã thu',
+                        data: finRev.length > 0 ? finRev : [0],
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Công nợ còn nợ',
+                        data: finDebt.length > 0 ? finDebt : [0],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans'" } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('vi-VN') + ' đ';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}

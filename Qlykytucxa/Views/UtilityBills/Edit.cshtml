@@ -1,0 +1,89 @@
+﻿@model Qlykytucxa.Models.UtilityBills
+
+@{
+    ViewBag.Title = "Sua Hoa don";
+}
+
+<h2 class="text-primary">Chinh sua Hoa don Dien Nuoc</h2>
+<hr />
+
+<div class="alert alert-info">
+    <strong>Don gia ap dung:</strong>
+    Dien: @String.Format("{0:N0}", ViewBag.ElectricPrice) d/kWh &nbsp;|&nbsp;
+    Nuoc: @String.Format("{0:N0}", ViewBag.WaterPrice) d/m&sup3;
+    <br/><small class="text-muted">(Tong tien se duoc tinh lai tu dong khi luu)</small>
+</div>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.BillId)
+
+    <div class="row">
+        <div class="col-md-6">
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.RoomId, "Phong", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.DropDownList("RoomId", null, htmlAttributes: new { @class = "form-select" })
+                @Html.ValidationMessageFor(model => model.RoomId, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.BillingMonth, "Thang", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.EditorFor(model => model.BillingMonth, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.BillingMonth, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.BillingYear, "Nam", htmlAttributes: new { @class = "form-label fw-bold" })
+                    @Html.EditorFor(model => model.BillingYear, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.BillingYear, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <hr />
+            <h5>Chi so Dien</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.OldElectricIndex, "Chi so cu", htmlAttributes: new { @class = "form-label" })
+                    @Html.EditorFor(model => model.OldElectricIndex, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.OldElectricIndex, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.NewElectricIndex, "Chi so moi", htmlAttributes: new { @class = "form-label" })
+                    @Html.EditorFor(model => model.NewElectricIndex, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.NewElectricIndex, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <h5>Chi so Nuoc</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.OldWaterIndex, "Chi so cu", htmlAttributes: new { @class = "form-label" })
+                    @Html.EditorFor(model => model.OldWaterIndex, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.OldWaterIndex, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-6 mb-3">
+                    @Html.LabelFor(model => model.NewWaterIndex, "Chi so moi", htmlAttributes: new { @class = "form-label" })
+                    @Html.EditorFor(model => model.NewWaterIndex, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.NewWaterIndex, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <div class="mb-3 form-check">
+                @Html.CheckBoxFor(model => model.IsPaid, new { @class = "form-check-input" })
+                @Html.LabelFor(model => model.IsPaid, "Da thanh toan", htmlAttributes: new { @class = "form-check-label" })
+            </div>
+
+            <div class="mt-3">
+                <input type="submit" value="Luu thay doi" class="btn btn-primary" />
+                @Html.ActionLink("Quay lai", "Index", null, new { @class = "btn btn-secondary" })
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

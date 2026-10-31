@@ -1,0 +1,208 @@
+﻿@model Qlykytucxa.Models.Rooms
+
+@{
+    ViewBag.Title = "Chi tiết Phòng " + Model.RoomNumber;
+    int occ = Model.CurrentOccupancy ?? 0;
+    int cap = Model.MaxCapacity;
+    int free = Math.Max(0, cap - occ);
+    var activeStudents = Model.RoomRegistrations.Where(r => r.Status == "Đang ở").ToList();
+    var historyStudents = Model.RoomRegistrations.Where(r => r.Status != "Đang ở").OrderByDescending(r => r.CheckOutDate).ToList();
+}
+
+<div class="container-fluid px-0">
+    <!-- Header Navigation -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="bi bi-door-open-fill text-primary me-2"></i>Chi tiết Phòng @Model.RoomNumber
+            </h4>
+            <p class="text-muted mb-0 small">Xem thông tin và quản lý sinh viên đang lưu trú trong phòng</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (free > 0)
+            {
+                <a href="@Url.Action("Create", "RoomRegistrations")" class="btn btn-success btn-sm px-3 shadow-sm">
+                    <i class="bi bi-person-plus-fill me-1"></i> Xếp thêm sinh viên
+                </a>
+            }
+            <a href="@Url.Action("Edit", new { id = Model.RoomId })" class="btn btn-outline-primary btn-sm px-3">
+                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i> Danh sách phòng
+            </a>
+        </div>
+    </div>
+
+    <!-- Thông tin phòng (Overview Card) -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Số phòng</small>
+                    <span class="fs-4 fw-bold text-primary">Phòng @Model.RoomNumber</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Loại phòng</small>
+                    <span class="fs-5 fw-semibold text-dark">@Model.RoomType</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Sĩ số hiện tại</small>
+                    <span class="fs-5 fw-bold @(occ >= cap ? "text-danger" : "text-success")">
+                        @occ / @cap người
+                    </span>
+                    <small class="text-muted ms-1">(Còn @free chỗ)</small>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Giá thuê phòng</small>
+                    <span class="fs-5 fw-bold text-danger">@String.Format("{0:N0} đ", Model.RoomPrice)</span>
+                    <small class="text-muted">/tháng</small>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Mức độ lấp đầy: <strong>@(cap > 0 ? (occ * 100 / cap) : 0)%</strong></span>
+                    <span>
+                        @if (occ >= cap)
+                        {
+                            <span class="badge bg-danger">Đã đủ chỗ</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Còn chỗ trống</span>
+                        }
+                    </span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar @(occ >= cap ? "bg-danger" : occ > 0 ? "bg-warning" : "bg-success")"
+                         role="progressbar" style="width: @(cap > 0 ? (occ * 100 / cap) : 0)%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Danh sách Sinh viên ĐANG Ở TRONG PHÒNG -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill text-success"></i>
+                Danh sách Sinh viên đang ở trong phòng
+                <span class="badge bg-success bg-opacity-10 text-success ms-1">@activeStudents.Count người</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã SV</th>
+                            <th>Họ và tên</th>
+                            <th>Giới tính</th>
+                            <th>Lớp học</th>
+                            <th>Số điện thoại</th>
+                            <th>Ngày vào ở</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (activeStudents.Any())
+                        {
+                            foreach (var reg in activeStudents)
+                            {
+                                var sv = reg.Students;
+                                <tr>
+                                    <td class="ps-4 fw-bold text-primary">@sv.StudentCode</td>
+                                    <td class="fw-semibold">@sv.FullName</td>
+                                    <td>
+                                        @if (sv.Gender == "Nam")
+                                        {
+                                            <span class="badge bg-primary bg-opacity-10 text-primary">Nam</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger bg-opacity-10 text-danger">Nữ</span>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">@sv.ClassName</span></td>
+                                    <td>@(string.IsNullOrEmpty(sv.Phone) ? "---" : sv.Phone)</td>
+                                    <td>
+                                        <i class="bi bi-calendar-check text-muted me-1"></i>
+                                        @reg.CheckInDate.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <!-- Nút XÓA RA KHỎI PHÒNG -->
+                                        @using (Html.BeginForm("RemoveStudent", "Rooms", new { registrationId = reg.RegistrationId, roomId = Model.RoomId }, FormMethod.Post, new { style = "display:inline;" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1"
+                                                    onclick="return confirm('Bạn có chắc chắn muốn đưa sinh viên [@sv.FullName] ra khỏi phòng @Model.RoomNumber không? Sĩ số phòng sẽ tự động giảm đi 1.');">
+                                                <i class="bi bi-person-x-fill me-1"></i> Xóa khỏi phòng
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-door-open fs-1 text-secondary opacity-50 d-block mb-2"></i>
+                                    Phòng này hiện chưa có sinh viên nào đang ở.
+                                    <br />
+                                    <a href="@Url.Action("Create", "RoomRegistrations")" class="btn btn-primary btn-sm mt-3">
+                                        <i class="bi bi-person-plus-fill me-1"></i> Xếp sinh viên vào phòng ngay
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Lịch sử sinh viên đã từng ở phòng này -->
+    @if (historyStudents.Any())
+    {
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white py-3 px-4 border-bottom">
+                <h6 class="fw-bold text-muted mb-0">
+                    <i class="bi bi-clock-history me-1"></i> Lịch sử sinh viên đã từng ở phòng này (Đã trả phòng)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 text-muted" style="font-size: 0.9rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Mã SV</th>
+                                <th>Họ và tên</th>
+                                <th>Lớp</th>
+                                <th>Ngày vào ở</th>
+                                <th>Ngày trả phòng</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var h in historyStudents)
+                            {
+                                <tr>
+                                    <td class="ps-4">@h.Students.StudentCode</td>
+                                    <td>@h.Students.FullName</td>
+                                    <td>@h.Students.ClassName</td>
+                                    <td>@h.CheckInDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@(h.CheckOutDate.HasValue ? h.CheckOutDate.Value.ToString("dd/MM/yyyy") : "---")</td>
+                                    <td><span class="badge bg-secondary">Đã trả phòng</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

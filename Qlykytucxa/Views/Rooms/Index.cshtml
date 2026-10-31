@@ -1,0 +1,147 @@
+﻿@model IEnumerable<Qlykytucxa.Models.Rooms>
+
+@{
+    ViewBag.Title = "Danh sách Phòng KTX";
+    string searchString = ViewBag.SearchString as string ?? "";
+    string buildingFilter = ViewBag.BuildingFilter as string ?? "";
+    string statusFilter = ViewBag.StatusFilter as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-door-open-fill text-success me-2"></i>Quản lý Tòa nhà & Phòng Ký túc xá
+                </h4>
+                <p class="text-muted mb-0 small">Tổng cộng: <strong>@Model.Count()</strong> phòng KTX</p>
+            </div>
+            <a href="@Url.Action("Create", "Rooms")" class="btn btn-success px-3 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Thêm Phòng mới
+            </a>
+        </div>
+
+        <!-- Bộ lọc đa tiêu chí -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("Index", "Rooms", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0" 
+                               placeholder="Tìm số phòng, loại phòng..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="buildingFilter" class="form-select">
+                        <option value="">-- Tất cả tòa nhà --</option>
+                        <option value="A" @(buildingFilter == "A" ? "selected" : "")>Tòa nhà A</option>
+                        <option value="B" @(buildingFilter == "B" ? "selected" : "")>Tòa nhà B</option>
+                        <option value="C" @(buildingFilter == "C" ? "selected" : "")>Tòa nhà C</option>
+                        <option value="D" @(buildingFilter == "D" ? "selected" : "")>Tòa nhà D</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">-- Tất cả tình trạng --</option>
+                        <option value="available" @(statusFilter == "available" ? "selected" : "")>Còn chỗ trống</option>
+                        <option value="full" @(statusFilter == "full" ? "selected" : "")>Đã đầy phòng</option>
+                        <option value="empty" @(statusFilter == "empty" ? "selected" : "")>Phòng hoàn toàn trống</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">Lọc</button>
+                    <a href="@Url.Action("Index", "Rooms")" class="btn btn-outline-secondary" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bảng danh sách phòng -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Số phòng</th>
+                        <th>Loại phòng</th>
+                        <th>Đang ở / Sức chứa</th>
+                        <th>Tình trạng chỗ</th>
+                        <th>Giá phòng / Tháng</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            // Đếm số sinh viên thực tế đang ở trong phòng từ bảng hợp đồng
+                            int liveOcc = item.RoomRegistrations != null 
+                                          ? item.RoomRegistrations.Count(r => r.Status == "Đang ở" || r.Status == "Dang o") 
+                                          : 0;
+                            
+                            int occ = Math.Max(liveOcc, item.CurrentOccupancy ?? 0);
+                            int cap = item.MaxCapacity;
+                            int free = Math.Max(0, cap - occ);
+
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary fs-6">
+                                    <a href="@Url.Action("Details", new { id = item.RoomId })" class="text-decoration-none fw-bold text-primary" title="Bấm để xem danh sách sinh viên trong phòng">
+                                        <i class="bi bi-door-closed me-1 text-secondary"></i>Phòng @item.RoomNumber
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@item.RoomType</span></td>
+                                <td>
+                                    <strong>@occ</strong> / @cap người
+                                    <div class="progress mt-1" style="height: 6px;">
+                                        <div class="progress-bar @(occ >= cap ? "bg-danger" : occ > 0 ? "bg-warning" : "bg-success")" 
+                                             role="progressbar" style="width: @(cap > 0 ? (occ * 100 / cap) : 0)%">
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (occ >= cap)
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">Đã đầy (@occ người)</span>
+                                    }
+                                    else if (occ == 0)
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">Trống (Còn @free chỗ)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success">Còn trống @free chỗ (Đang ở @occ)</span>
+                                    }
+                                </td>
+                                <td class="fw-semibold text-danger">@String.Format("{0:N0} đ", item.RoomPrice)</td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Edit", new { id = item.RoomId })" class="btn btn-outline-primary" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Details", new { id = item.RoomId })" class="btn btn-outline-info" title="Chi tiết & Người ở">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = item.RoomId })" class="btn btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i> Không có phòng nào phù hợp bộ lọc.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

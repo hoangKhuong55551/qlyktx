@@ -1,0 +1,84 @@
+﻿@model Qlykytucxa.Models.Announcement
+@{
+    ViewBag.Title = "Đăng Thông báo mới";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            <i class="bi bi-megaphone-fill text-primary me-2"></i>Đăng Thông báo KTX Mới
+                        </h4>
+                        <p class="text-muted small mb-0">Nội dung sẽ được hiển thị ngay lập tức trên trang chủ và cổng sinh viên</p>
+                    </div>
+                    <a href="@Url.Action("Index", "Announcements")" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại
+                    </a>
+                </div>
+
+                @using (Html.BeginForm("Create", "Announcements", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Title, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.Title, new { @class = "form-control", placeholder = "VD: Thông báo cắt nước sinh hoạt bảo trì bể chứa...", required = "required" })
+                        @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Category, new { @class = "form-label fw-bold" })
+                            <select name="Category" class="form-select" required>
+                                <option value="Bảo trì">Bảo trì điện nước</option>
+                                <option value="Điện nước">Hóa đơn & Thanh toán</option>
+                                <option value="Vệ sinh">Vệ sinh & An ninh</option>
+                                <option value="Nội quy KTX">Nội quy & Kỷ luật</option>
+                                <option value="Thông báo chung" selected>Thông báo chung</option>
+                            </select>
+                            @Html.ValidationMessageFor(m => m.Category, "", new { @class = "text-danger small" })
+                        </div>
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Priority, new { @class = "form-label fw-bold" })
+                            <select name="Priority" class="form-select">
+                                <option value="Thông thường" selected>Thông thường</option>
+                                <option value="Quan trọng">Quan trọng</option>
+                                <option value="Khẩn cấp">Khẩn cấp (Màu đỏ)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Content, new { @class = "form-label fw-bold" })
+                        @Html.TextAreaFor(m => m.Content, new { @class = "form-control", rows = "5", placeholder = "Nội dung chi tiết thông báo gửi đến sinh viên...", required = "required" })
+                        @Html.ValidationMessageFor(m => m.Content, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.AuthorName, new { @class = "form-label fw-bold" })
+                            @Html.TextBoxFor(m => m.AuthorName, new { @class = "form-control", required = "required" })
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center pt-4">
+                            <div class="form-check form-switch">
+                                @Html.CheckBoxFor(m => m.IsActive, new { @class = "form-check-input", @checked = "checked" })
+                                <label class="form-check-label fw-semibold" for="IsActive">Hiển thị công khai ngay</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="@Url.Action("Index", "Announcements")" class="btn btn-secondary px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-send-fill me-1"></i> Đăng thông báo
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

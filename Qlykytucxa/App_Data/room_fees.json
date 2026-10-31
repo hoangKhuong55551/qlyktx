@@ -1,0 +1,50 @@
+[
+  {
+    "Id": 1,
+    "RegistrationId": 1,
+    "StudentId": 1,
+    "StudentCode": "SV001",
+    "StudentName": "Nguyễn Văn An",
+    "RoomId": 1,
+    "RoomNumber": "A101",
+    "Amount": 1500000.0,
+    "SemesterPeriod": "Kỳ 2 (2026)",
+    "DueDate": "2026-11-01T00:00:00",
+    "PaidDate": null,
+    "PaymentMethod": null,
+    "IsPaid": false,
+    "Note": "Thu tiền phòng định kỳ"
+  },
+  {
+    "Id": 2,
+    "RegistrationId": 2,
+    "StudentId": 2,
+    "StudentCode": "SV002",
+    "StudentName": "Trần Quốc Bảo",
+    "RoomId": 1,
+    "RoomNumber": "A101",
+    "Amount": 1500000.0,
+    "SemesterPeriod": "Kỳ 2 (2026)",
+    "DueDate": "2026-11-01T00:00:00",
+    "PaidDate": null,
+    "PaymentMethod": null,
+    "IsPaid": false,
+    "Note": "Thu tiền phòng định kỳ"
+  },
+  {
+    "Id": 3,
+    "RegistrationId": 3,
+    "StudentId": 4,
+    "StudentCode": "2451220094",
+    "StudentName": "Nguyễn Khương",
+    "RoomId": 1,
+    "RoomNumber": "A101",
+    "Amount": 1500000.0,
+    "SemesterPeriod": "Kỳ 2 (2026)",
+    "DueDate": "2026-11-13T00:00:00",
+    "PaidDate": null,
+    "PaymentMethod": null,
+    "IsPaid": false,
+    "Note": "Thu tiền phòng định kỳ"
+  }
+]

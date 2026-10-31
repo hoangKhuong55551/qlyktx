@@ -1,0 +1,36 @@
+﻿@model Qlykytucxa.Models.Rooms
+
+@{
+    ViewBag.Title = "Xoa Phong";
+}
+
+<h2 class="text-danger">Xac nhan Xoa Phong</h2>
+<hr />
+
+@Html.ValidationSummary(false, "", new { @class = "alert alert-danger" })
+
+<dl class="row">
+    <dt class="col-sm-3">So phong</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.RoomNumber)</dd>
+
+    <dt class="col-sm-3">Loai phong</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.RoomType)</dd>
+
+    <dt class="col-sm-3">Suc chua</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.MaxCapacity)</dd>
+
+    <dt class="col-sm-3">Dang o</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.CurrentOccupancy)</dd>
+
+    <dt class="col-sm-3">Gia phong</dt>
+    <dd class="col-sm-9">@String.Format("{0:N0} d", Model.RoomPrice)</dd>
+</dl>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <div>
+        <input type="submit" value="Xac nhan Xoa" class="btn btn-danger" />
+        @Html.ActionLink("Quay lai", "Index", null, new { @class = "btn btn-secondary" })
+    </div>
+}

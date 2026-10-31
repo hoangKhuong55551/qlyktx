@@ -1,0 +1,172 @@
+﻿@model IEnumerable<Qlykytucxa.Models.Students>
+
+@{
+    ViewBag.Title = "Danh sách Sinh viên";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalItems = ViewBag.TotalItems ?? 0;
+    string searchString = ViewBag.SearchString as string ?? "";
+    string dormFilter = ViewBag.DormFilter as string ?? "";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-people-fill text-primary me-2"></i>Hồ sơ Sinh viên Ký túc xá
+                </h4>
+                <p class="text-muted mb-0 small">Tổng cộng: <strong>@totalItems</strong> sinh viên trong danh sách</p>
+            </div>
+            <a href="@Url.Action("Create", "Students")" class="btn btn-primary px-3 shadow-sm">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm Sinh viên mới
+            </a>
+        </div>
+
+        <!-- Thanh Tìm kiếm & Bộ lọc -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("Index", "Students", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0" 
+                               placeholder="Tìm theo Mã SV, Họ tên, Lớp, SĐT..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="dormFilter" class="form-select">
+                        <option value="">-- Tất cả trạng thái nội trú --</option>
+                        <option value="has_room" @(dormFilter == "has_room" ? "selected" : "")>Đang ở KTX (Đã có phòng)</option>
+                        <option value="no_room" @(dormFilter == "no_room" ? "selected" : "")>Chưa xếp phòng KTX</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">
+                        <i class="bi bi-funnel-fill me-1"></i> Lọc dữ liệu
+                    </button>
+                    <a href="@Url.Action("Index", "Students")" class="btn btn-outline-secondary" title="Xóa bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bảng danh sách sinh viên -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Mã SV</th>
+                        <th>Họ và tên</th>
+                        <th>Giới tính</th>
+                        <th>Số điện thoại</th>
+                        <th>Lớp học</th>
+                        <th>Phòng nội trú</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var activeReg = item.RoomRegistrations.FirstOrDefault(r => r.Status == "Đang ở");
+
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary">@item.StudentCode</td>
+                                <td class="fw-semibold">@item.FullName</td>
+                                <td>
+                                    @if (item.Gender == "Nam")
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">Nam</span>
+                                    }
+                                    else if (item.Gender == "Nữ")
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">Nữ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">@item.Gender</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrEmpty(item.Phone) ? "---" : item.Phone)</td>
+                                <td><span class="badge bg-light text-dark border">@item.ClassName</span></td>
+                                <td>
+                                    @if (activeReg != null && activeReg.Rooms != null)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold">
+                                            <i class="bi bi-door-open me-1"></i>Phòng @activeReg.Rooms.RoomNumber
+                                        </span>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">
+                                            Từ: @activeReg.CheckInDate.ToString("dd/MM/yyyy")
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning">Chưa có phòng</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        @if (activeReg == null)
+                                        {
+                                            <a href="@Url.Action("Create", "RoomRegistrations")" class="btn btn-outline-success" title="Xếp phòng">
+                                                <i class="bi bi-box-arrow-in-right"></i>
+                                            </a>
+                                        }
+                                        <a href="@Url.Action("Edit", new { id = item.StudentId })" class="btn btn-outline-primary" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Details", new { id = item.StudentId })" class="btn btn-outline-info" title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = item.StudentId })" class="btn btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Không tìm thấy sinh viên nào phù hợp với điều kiện tìm kiếm.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        @if (totalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                <small class="text-muted">
+                    Trang <strong>@currentPage</strong> / <strong>@totalPages</strong> (Tổng @totalItems sinh viên)
+                </small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, searchString = searchString, dormFilter = dormFilter })">Trước</a>
+                        </li>
+                        @for (int p = 1; p <= totalPages; p++)
+                        {
+                            <li class="page-item @(p == currentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = p, searchString = searchString, dormFilter = dormFilter })">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, searchString = searchString, dormFilter = dormFilter })">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>

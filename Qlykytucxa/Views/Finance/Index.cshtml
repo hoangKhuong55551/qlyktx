@@ -1,0 +1,355 @@
+﻿@model Qlykytucxa.Models.FinanceReportViewModel
+@{
+    ViewBag.Title = "Báo cáo Thu Chi & Tài chính KTX";
+    string typeFilter = ViewBag.TypeFilter as string ?? "";
+    int? monthFilter = ViewBag.MonthFilter as int?;
+    int? yearFilter = ViewBag.YearFilter as int?;
+
+    var chartLabels = ViewBag.ChartLabels as string[] ?? new string[0];
+    var chartRevenue = ViewBag.ChartRevenue as decimal[] ?? new decimal[0];
+    var chartExpense = ViewBag.ChartExpense as decimal[] ?? new decimal[0];
+    var chartProfit = ViewBag.ChartProfit as decimal[] ?? new decimal[0];
+}
+
+<style>
+    .finance-stat-card {
+        border-radius: 16px;
+        padding: 22px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .finance-stat-card .icon-bg {
+        position: absolute;
+        right: 15px;
+        bottom: 10px;
+        font-size: 4rem;
+        opacity: 0.15;
+    }
+</style>
+
+<!-- 1. Header & Actions -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="bi bi-wallet2 text-success me-2"></i>Báo cáo Thu - Chi & Tài chính KTX
+        </h4>
+        <p class="text-muted mb-0 small">Theo dõi doanh thu tiền phòng, tiền điện nước, chi phí vận hành và sổ quỹ tiền mặt</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="@Url.Action("RoomFees", "Finance")" class="btn btn-outline-primary px-3 shadow-sm">
+            <i class="bi bi-cash-coin me-1"></i> Quản lý Thu Tiền Phòng
+        </a>
+        <button type="button" class="btn btn-outline-danger px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+            <i class="bi bi-dash-circle me-1"></i> Ghi nhận Khoản Chi
+        </button>
+        <a href="@Url.Action("ExportFinanceExcel", "Finance", new { typeFilter = typeFilter, monthFilter = monthFilter, yearFilter = yearFilter })" class="btn btn-success px-3 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Xuất Sổ Quỹ (Excel)
+        </a>
+    </div>
+</div>
+
+<!-- 2. Bốn Thẻ Chỉ Số Tài Chính Chính -->
+<div class="row g-3 mb-4">
+    <!-- Tổng Thu -->
+    <div class="col-xl-3 col-md-6">
+        <div class="finance-stat-card" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+            <div class="small text-uppercase fw-bold text-white-50 mb-1">Tổng Doanh Thu Đã Thu</div>
+            <div class="fs-2 fw-bold mb-1">@Model.TotalRevenue.ToString("N0") đ</div>
+            <div class="small text-white-50">
+                Tiền phòng: @Model.RoomFeeRevenue.ToString("N0") đ &bull; ĐN: @Model.UtilityRevenue.ToString("N0") đ
+            </div>
+            <i class="bi bi-graph-up-arrow icon-bg"></i>
+        </div>
+    </div>
+
+    <!-- Tổng Chi -->
+    <div class="col-xl-3 col-md-6">
+        <div class="finance-stat-card" style="background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);">
+            <div class="small text-uppercase fw-bold text-white-50 mb-1">Tổng Chi Phí Vận Hành</div>
+            <div class="fs-2 fw-bold mb-1">@Model.TotalExpense.ToString("N0") đ</div>
+            <div class="small text-white-50">Bảo trì thiết bị, điện nước tổng, vật tư KTX</div>
+            <i class="bi bi-cart-x-fill icon-bg"></i>
+        </div>
+    </div>
+
+    <!-- Lợi Nhuận Ròng -->
+    <div class="col-xl-3 col-md-6">
+        <div class="finance-stat-card" style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);">
+            <div class="small text-uppercase fw-bold text-white-50 mb-1">Lợi Nhuận Ròng KTX</div>
+            <div class="fs-2 fw-bold mb-1">@Model.NetProfit.ToString("N0") đ</div>
+            <div class="small text-white-50">Chênh lệch Thu trừ Chi thực tế</div>
+            <i class="bi bi-piggy-bank-fill icon-bg"></i>
+        </div>
+    </div>
+
+    <!-- Công Nợ Chưa Thu -->
+    <div class="col-xl-3 col-md-6">
+        <div class="finance-stat-card" style="background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);">
+            <div class="small text-uppercase fw-bold text-white-50 mb-1">Công Nợ Chưa Thu Hồi</div>
+            <div class="fs-2 fw-bold mb-1">@Model.TotalReceivable.ToString("N0") đ</div>
+            <div class="small text-white-50">Tiền phòng + Tiền điện nước tồn đọng</div>
+            <i class="bi bi-clock-history icon-bg"></i>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Biểu Đồ Phân Tích Tài Chính -->
+<div class="row g-4 mb-4">
+    <!-- Biểu đồ 1: Thu - Chi - Lợi Nhuận qua các tháng -->
+    <div class="col-lg-8">
+        <div class="card border-0 rounded-4 shadow-sm p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-bar-chart-fill text-primary me-2"></i>Diễn biến Thu - Chi - Lợi nhuận (6 tháng gần nhất)
+                </h5>
+                <span class="badge bg-light text-secondary border">Đơn vị: VNĐ</span>
+            </div>
+            <div style="position: relative; height: 280px;">
+                <canvas id="cashflowChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ 2: Cơ cấu Nguồn Thu -->
+    <div class="col-lg-4">
+        <div class="card border-0 rounded-4 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-pie-chart-fill text-success me-2"></i>Cơ cấu Nguồn Thu KTX
+            </h5>
+            <div style="position: relative; height: 230px;">
+                <canvas id="revenuePieChart"></canvas>
+            </div>
+            <div class="text-center small text-muted mt-2">
+                Doanh thu ký túc xá chủ yếu đến từ tiền thuê phòng và các hóa đơn dịch vụ
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Sổ Quỹ Thu Chi Chi Tiết -->
+<div class="card border-0 rounded-4 shadow-sm">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-journal-text text-primary me-2"></i>Sổ Quỹ Thu - Chi KTX Chi Tiết
+            </h5>
+
+            <!-- Bộ lọc sổ quỹ -->
+            @using (Html.BeginForm("Index", "Finance", FormMethod.Get, new { @class = "d-flex gap-2 align-items-center" }))
+            {
+                <select name="typeFilter" class="form-select form-select-sm" style="width: 130px;">
+                    <option value="">-- Thu / Chi --</option>
+                    <option value="Thu" @(typeFilter == "Thu" ? "selected" : "")>Khoản Thu (+)</option>
+                    <option value="Chi" @(typeFilter == "Chi" ? "selected" : "")>Khoản Chi (-)</option>
+                </select>
+                <select name="monthFilter" class="form-select form-select-sm" style="width: 120px;">
+                    <option value="">-- Tháng --</option>
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" @(monthFilter == m ? "selected" : "")>Tháng @m</option>
+                    }
+                </select>
+                <select name="yearFilter" class="form-select form-select-sm" style="width: 110px;">
+                    <option value="">-- Năm --</option>
+                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 2; y--)
+                    {
+                        <option value="@y" @(yearFilter == y ? "selected" : "")>Năm @y</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary px-3">Lọc</button>
+                <a href="@Url.Action("Index", "Finance")" class="btn btn-sm btn-outline-secondary" title="Đặt lại">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            }
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã GD</th>
+                        <th>Ngày lập</th>
+                        <th>Phân loại</th>
+                        <th>Hạng mục</th>
+                        <th>Người nộp / Người nhận</th>
+                        <th>Phòng</th>
+                        <th>Số tiền (VNĐ)</th>
+                        <th>Phương thức</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.RecentTransactions.Any())
+                    {
+                        foreach (var tx in Model.RecentTransactions)
+                        {
+                            <tr>
+                                <td class="fw-bold text-muted">GD#@tx.Id.ToString("D4")</td>
+                                <td>@tx.TransactionDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (tx.Type == "Thu")
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                            <i class="bi bi-arrow-down-left me-1"></i>Thu vào
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                            <i class="bi bi-arrow-up-right me-1"></i>Chi ra
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@tx.Category</span>
+                                    <div class="text-muted small" style="max-width: 280px;">@tx.Description</div>
+                                </td>
+                                <td class="fw-semibold">@tx.RelatedPerson</td>
+                                <td><span class="badge bg-light text-dark border">@tx.RoomNumber</span></td>
+                                <td class="fw-bold @(tx.Type == "Thu" ? "text-success" : "text-danger")">
+                                    @(tx.Type == "Thu" ? "+" : "-")@tx.Amount.ToString("N0") đ
+                                </td>
+                                <td><span class="badge bg-light text-secondary border">@tx.PaymentMethod</span></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-1 opacity-50"></i>
+                                Chưa có giao dịch nào phù hợp với bộ lọc.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ghi Nhận Khoản Chi -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            @using (Html.BeginForm("AddExpense", "Finance", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-dash-circle-fill me-2"></i>Ghi Nhận Khoản Chi KTX
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Danh mục chi phí:</label>
+                        <select name="category" class="form-select" required>
+                            <option value="Chi bảo trì">Chi bảo trì, sửa chữa điện nước</option>
+                            <option value="Chi mua sắm vật tư">Chi mua sắm thiết bị, vật tư KTX</option>
+                            <option value="Chi điện nước tổng">Chi thanh toán hóa đơn Điện lực / Nước sạch</option>
+                            <option value="Chi vệ sinh & môi trường">Chi vệ sinh môi trường, gom rác</option>
+                            <option value="Chi phí khác">Chi phí vận hành khác</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Số tiền chi (VNĐ):</label>
+                        <input type="number" name="amount" class="form-control" placeholder="VD: 500000" min="1000" step="1000" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Người nhận tiền / Đơn vị thụ hưởng:</label>
+                        <input type="text" name="relatedPerson" class="form-control" placeholder="VD: Chú Hùng thợ nước, Công ty Điện lực..." required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Hình thức thanh toán:</label>
+                        <select name="paymentMethod" class="form-select">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản ngân hàng</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nội dung chi tiết:</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Lý do chi, số hóa đơn chứng từ kèm theo..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger">Lưu Khoản Chi</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        // 1. Biểu đồ Cột Nhóm: Thu - Chi - Lợi nhuận
+        const cfCtx = document.getElementById('cashflowChart').getContext('2d');
+        const cfLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(chartLabels));
+        const cfRev = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(chartRevenue));
+        const cfExp = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(chartExpense));
+
+        new Chart(cfCtx, {
+            type: 'bar',
+            data: {
+                labels: cfLabels.length > 0 ? cfLabels : ['Chưa có dữ liệu'],
+                datasets: [
+                    {
+                        label: 'Doanh thu (Thu vào)',
+                        data: cfRev.length > 0 ? cfRev : [0],
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Chi phí (Chi ra)',
+                        data: cfExp.length > 0 ? cfExp : [0],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12 } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return v.toLocaleString('vi-VN') + ' đ'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Biểu đồ Tròn: Cơ cấu Doanh thu (Tiền phòng vs Điện nước)
+        const pieCtx = document.getElementById('revenuePieChart').getContext('2d');
+        new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tiền thuê phòng', 'Tiền điện nước'],
+                datasets: [{
+                    data: [@Model.RoomFeeRevenue, @Model.UtilityRevenue],
+                    backgroundColor: ['#3b82f6', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                },
+                cutout: '65%'
+            }
+        });
+    </script>
+}

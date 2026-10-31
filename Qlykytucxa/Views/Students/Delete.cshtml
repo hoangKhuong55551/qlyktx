@@ -1,0 +1,36 @@
+﻿@model Qlykytucxa.Models.Students
+
+@{
+    ViewBag.Title = "Xoa Sinh vien";
+}
+
+<h2 class="text-danger">Xac nhan Xoa Sinh vien</h2>
+<hr />
+
+@Html.ValidationSummary(false, "", new { @class = "alert alert-danger" })
+
+<dl class="row">
+    <dt class="col-sm-3">Ma SV</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.StudentCode)</dd>
+
+    <dt class="col-sm-3">Ho va ten</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.FullName)</dd>
+
+    <dt class="col-sm-3">Gioi tinh</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.Gender)</dd>
+
+    <dt class="col-sm-3">So dien thoai</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.Phone)</dd>
+
+    <dt class="col-sm-3">Lop</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.ClassName)</dd>
+</dl>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <div>
+        <input type="submit" value="Xac nhan Xoa" class="btn btn-danger" />
+        @Html.ActionLink("Quay lai", "Index", null, new { @class = "btn btn-secondary" })
+    </div>
+}

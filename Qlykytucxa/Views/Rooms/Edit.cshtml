@@ -1,0 +1,62 @@
+﻿@model Qlykytucxa.Models.Rooms
+
+@{
+    ViewBag.Title = "Chinh sua Phong";
+}
+
+<h2 class="text-primary">Chinh sua thong tin Phong</h2>
+<hr />
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.RoomId)
+
+    <div class="row">
+        <div class="col-md-5">
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.RoomNumber, "So phong", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.RoomNumber, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.RoomNumber, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.RoomType, "Loai phong", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.DropDownListFor(model => model.RoomType,
+                    new SelectList(new[] { "Phong don", "Phong doi", "Phong 4 nguoi", "Phong 6 nguoi", "Phong 8 nguoi" }, Model.RoomType),
+                    "-- Chon loai phong --",
+                    new { @class = "form-select" })
+                @Html.ValidationMessageFor(model => model.RoomType, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.MaxCapacity, "Suc chua toi da (nguoi)", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.MaxCapacity, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.MaxCapacity, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.CurrentOccupancy, "So nguoi dang o", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.CurrentOccupancy, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.CurrentOccupancy, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.RoomPrice, "Gia phong (VND/thang)", htmlAttributes: new { @class = "form-label fw-bold" })
+                @Html.EditorFor(model => model.RoomPrice, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.RoomPrice, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mt-3">
+                <input type="submit" value="Luu thay doi" class="btn btn-primary" />
+                @Html.ActionLink("Quay lai", "Index", null, new { @class = "btn btn-secondary" })
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

@@ -1,0 +1,83 @@
+﻿@model Qlykytucxa.Models.Announcement
+@{
+    ViewBag.Title = "Chỉnh sửa Thông báo";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa Thông báo KTX
+                        </h4>
+                        <p class="text-muted small mb-0">Cập nhật nội dung thông báo mã số #@Model.Id</p>
+                    </div>
+                    <a href="@Url.Action("Index", "Announcements")" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại
+                    </a>
+                </div>
+
+                @using (Html.BeginForm("Edit", "Announcements", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.Id)
+                    @Html.HiddenFor(m => m.CreatedAt)
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Title, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.Title, new { @class = "form-control", required = "required" })
+                        @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Category, new { @class = "form-label fw-bold" })
+                            <select name="Category" class="form-select" required>
+                                <option value="Bảo trì" @(Model.Category == "Bảo trì" ? "selected" : "")>Bảo trì điện nước</option>
+                                <option value="Điện nước" @(Model.Category == "Điện nước" ? "selected" : "")>Hóa đơn & Thanh toán</option>
+                                <option value="Vệ sinh" @(Model.Category == "Vệ sinh" ? "selected" : "")>Vệ sinh & An ninh</option>
+                                <option value="Nội quy KTX" @(Model.Category == "Nội quy KTX" ? "selected" : "")>Nội quy & Kỷ luật</option>
+                                <option value="Thông báo chung" @(Model.Category == "Thông báo chung" ? "selected" : "")>Thông báo chung</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Priority, new { @class = "form-label fw-bold" })
+                            <select name="Priority" class="form-select">
+                                <option value="Thông thường" @(Model.Priority == "Thông thường" ? "selected" : "")>Thông thường</option>
+                                <option value="Quan trọng" @(Model.Priority == "Quan trọng" ? "selected" : "")>Quan trọng</option>
+                                <option value="Khẩn cấp" @(Model.Priority == "Khẩn cấp" ? "selected" : "")>Khẩn cấp (Màu đỏ)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Content, new { @class = "form-label fw-bold" })
+                        @Html.TextAreaFor(m => m.Content, new { @class = "form-control", rows = "5", required = "required" })
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.AuthorName, new { @class = "form-label fw-bold" })
+                            @Html.TextBoxFor(m => m.AuthorName, new { @class = "form-control", required = "required" })
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center pt-4">
+                            <div class="form-check form-switch">
+                                @Html.CheckBoxFor(m => m.IsActive, new { @class = "form-check-input" })
+                                <label class="form-check-label fw-semibold" for="IsActive">Hiển thị công khai</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="@Url.Action("Index", "Announcements")" class="btn btn-secondary px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
