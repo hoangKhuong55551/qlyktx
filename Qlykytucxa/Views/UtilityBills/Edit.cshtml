@@ -71,10 +71,7 @@
                 </div>
             </div>
 
-            <div class="mb-3 form-check">
-                @Html.CheckBoxFor(model => model.IsPaid, new { @class = "form-check-input" })
-                @Html.LabelFor(model => model.IsPaid, "Da thanh toan", htmlAttributes: new { @class = "form-check-label" })
-            </div>
+            <p class="text-muted small">Trạng thái thanh toán được cập nhật qua nút "Thu tiền" ở danh sách hóa đơn (tự ghi vào sổ quỹ).</p>
 
             <div class="mt-3">
                 <input type="submit" value="Luu thay doi" class="btn btn-primary" />

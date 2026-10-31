@@ -15,6 +15,8 @@ namespace Qlykytucxa.Controllers
     [RoleAuthorize(UserRoles.Admin)]
     public class RoomRegistrationsController : Controller
     {
+        private static readonly string[] ValidStatuses = { DormConstants.StatusDangO, DormConstants.StatusDaTraPhong, DormConstants.StatusDaThanhLy };
+
         private MiniDormDBEntities db = new MiniDormDBEntities();
         private DormExtContext ext = new DormExtContext();
 
@@ -39,15 +41,15 @@ namespace Qlykytucxa.Controllers
             DateTime in30Days = DateTime.Now.AddDays(30);
             if (expiryFilter == "expiring")
             {
-                registrations = registrations.Where(r => (r.Status == DormConstants.StatusDangO || r.Status == "Đang ở")
-                                                      && r.CheckOutDate.HasValue 
-                                                      && r.CheckOutDate.Value <= in30Days 
+                registrations = registrations.Where(r => r.Status == DormConstants.StatusDangO
+                                                      && r.CheckOutDate.HasValue
+                                                      && r.CheckOutDate.Value <= in30Days
                                                       && r.CheckOutDate.Value >= DateTime.Now);
             }
             else if (expiryFilter == "expired")
             {
-                registrations = registrations.Where(r => (r.Status == DormConstants.StatusDangO || r.Status == "Đang ở")
-                                                      && r.CheckOutDate.HasValue 
+                registrations = registrations.Where(r => r.Status == DormConstants.StatusDangO
+                                                      && r.CheckOutDate.HasValue
                                                       && r.CheckOutDate.Value < DateTime.Now);
             }
 
@@ -90,7 +92,7 @@ namespace Qlykytucxa.Controllers
         public ActionResult ExtendContract(int registrationId, DateTime newCheckOutDate)
         {
             var reg = db.RoomRegistrations.Include(r => r.Students).FirstOrDefault(r => r.RegistrationId == registrationId);
-            if (reg != null)
+            if (reg != null && reg.Status == DormConstants.StatusDangO)
             {
                 if (newCheckOutDate <= reg.CheckInDate)
                 {
@@ -111,86 +113,84 @@ namespace Qlykytucxa.Controllers
         public ActionResult TerminateContract(int registrationId, string reason)
         {
             var reg = db.RoomRegistrations.Include(r => r.Students).Include(r => r.Rooms).FirstOrDefault(r => r.RegistrationId == registrationId);
-            if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở"))
+            if (reg != null && reg.Status == DormConstants.StatusDangO)
             {
                 RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
-                reg.Status = "Đã thanh lý";
+                reg.Status = DormConstants.StatusDaThanhLy;
                 reg.CheckOutDate = DateTime.Now;
-
-                var room = db.Rooms.Find(reg.RoomId);
-                if (room != null && (room.CurrentOccupancy ?? 0) > 0)
-                {
-                    room.CurrentOccupancy -= 1;
-                }
                 db.SaveChanges();
+                OccupancyService.Recalculate(db);
                 TempData["Success"] = $"Đã thanh lý hợp đồng của sinh viên {reg.Students.FullName} phòng {reg.Rooms.RoomNumber} thành công! (Lý do: {reason ?? "Thanh lý bình thường"})";
             }
             return RedirectToAction("Index");
         }
 
+        private void PopulateCreateLists(int? roomId = null, int? studentId = null)
+        {
+            var availableRooms = db.Rooms.Where(r => (r.CurrentOccupancy ?? 0) < r.MaxCapacity).OrderBy(r => r.RoomNumber).ToList();
+            ViewBag.RoomId = new SelectList(availableRooms, "RoomId", "RoomNumber", roomId);
+
+            var freeStudents = db.Students
+                .Where(s => !s.RoomRegistrations.Any(r => r.Status == DormConstants.StatusDangO))
+                .OrderBy(s => s.StudentCode)
+                .ToList();
+            ViewBag.StudentId = new SelectList(freeStudents, "StudentId", "FullName", studentId);
+        }
+
         // GET: RoomRegistrations/Create
         public ActionResult Create()
         {
-            var availableRooms = db.Rooms.Where(r => (r.CurrentOccupancy ?? 0) < r.MaxCapacity).ToList();
-            ViewBag.RoomId = new SelectList(availableRooms, "RoomId", "RoomNumber");
-
-            var activeStudentIds = db.RoomRegistrations
-                                     .Where(r => r.Status == DormConstants.StatusDangO || r.Status == "Đang ở")
-                                     .Select(r => r.StudentId)
-                                     .ToList();
-            var freeStudents = db.Students.Where(s => !activeStudentIds.Contains(s.StudentId)).ToList();
-            ViewBag.StudentId = new SelectList(freeStudents, "StudentId", "FullName");
-
+            PopulateCreateLists();
             return View();
         }
 
         // POST: RoomRegistrations/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "RegistrationId,StudentId,RoomId,CheckInDate,CheckOutDate,Status")] RoomRegistrations roomRegistrations)
+        public ActionResult Create([Bind(Include = "StudentId,RoomId,CheckInDate,CheckOutDate")] RoomRegistrations roomRegistrations)
         {
             var room = db.Rooms.Find(roomRegistrations.RoomId);
-
-            if (room != null && (room.CurrentOccupancy ?? 0) >= room.MaxCapacity)
+            if (room == null)
+            {
+                ModelState.AddModelError("RoomId", "Vui lòng chọn phòng hợp lệ!");
+            }
+            else if (OccupancyService.ActiveCount(db, room.RoomId) >= room.MaxCapacity)
             {
                 ModelState.AddModelError("RoomId", $"Phòng {room.RoomNumber} đã đủ {room.MaxCapacity} người, không thể xếp thêm!");
             }
 
-            bool alreadyHasRoom = db.RoomRegistrations.Any(r => r.StudentId == roomRegistrations.StudentId && (r.Status == DormConstants.StatusDangO || r.Status == "Đang ở"));
+            bool alreadyHasRoom = db.RoomRegistrations.Any(r => r.StudentId == roomRegistrations.StudentId && r.Status == DormConstants.StatusDangO);
             if (alreadyHasRoom)
             {
                 ModelState.AddModelError("StudentId", "Sinh viên này hiện đang có phòng trong KTX rồi!");
             }
 
+            if (roomRegistrations.CheckInDate == default(DateTime))
+            {
+                roomRegistrations.CheckInDate = DateTime.Today;
+            }
+            // Nếu không nhập ngày kết thúc, mặc định hợp đồng là 6 tháng
+            if (!roomRegistrations.CheckOutDate.HasValue)
+            {
+                roomRegistrations.CheckOutDate = roomRegistrations.CheckInDate.AddMonths(6);
+            }
+            if (roomRegistrations.CheckOutDate.Value <= roomRegistrations.CheckInDate)
+            {
+                ModelState.AddModelError("CheckOutDate", "Ngày trả phòng phải sau ngày vào ở!");
+            }
+
             if (ModelState.IsValid)
             {
                 roomRegistrations.Status = DormConstants.StatusDangO;
-                if (roomRegistrations.CheckInDate == default(DateTime))
-                {
-                    roomRegistrations.CheckInDate = DateTime.Now;
-                }
-
-                // Nếu không nhập ngày kết thúc, mặc định hợp đồng là 6 tháng
-                if (!roomRegistrations.CheckOutDate.HasValue)
-                {
-                    roomRegistrations.CheckOutDate = roomRegistrations.CheckInDate.AddMonths(6);
-                }
-
                 db.RoomRegistrations.Add(roomRegistrations);
-
-                if (room != null)
-                {
-                    room.CurrentOccupancy = (room.CurrentOccupancy ?? 0) + 1;
-                }
-
                 db.SaveChanges();
+                OccupancyService.Recalculate(db);
+
                 TempData["Success"] = "Xếp phòng cho sinh viên thành công!";
                 return RedirectToAction("Index");
             }
 
-            var availableRooms = db.Rooms.Where(r => (r.CurrentOccupancy ?? 0) < r.MaxCapacity).ToList();
-            ViewBag.RoomId = new SelectList(availableRooms, "RoomId", "RoomNumber", roomRegistrations.RoomId);
-            ViewBag.StudentId = new SelectList(db.Students, "StudentId", "FullName", roomRegistrations.StudentId);
+            PopulateCreateLists(roomRegistrations.RoomId, roomRegistrations.StudentId);
             return View(roomRegistrations);
         }
 
@@ -200,7 +200,7 @@ namespace Qlykytucxa.Controllers
             var activeRegistrations = db.RoomRegistrations
                                         .Include(r => r.Students)
                                         .Include(r => r.Rooms)
-                                        .Where(r => r.Status == DormConstants.StatusDangO || r.Status == "Đang ở")
+                                        .Where(r => r.Status == DormConstants.StatusDangO)
                                         .ToList();
 
             var availableRooms = db.Rooms
@@ -223,7 +223,7 @@ namespace Qlykytucxa.Controllers
                            .Include(r => r.Rooms)
                            .FirstOrDefault(r => r.RegistrationId == registrationId);
 
-            if (oldReg == null || (oldReg.Status != DormConstants.StatusDangO && oldReg.Status != "Đang ở"))
+            if (oldReg == null || oldReg.Status != DormConstants.StatusDangO)
             {
                 TempData["Error"] = "Không tìm thấy hợp đồng nội trú hợp lệ!";
                 return RedirectToAction("Transfer");
@@ -236,7 +236,7 @@ namespace Qlykytucxa.Controllers
             }
 
             var newRoom = db.Rooms.Find(newRoomId);
-            if (newRoom == null || (newRoom.CurrentOccupancy ?? 0) >= newRoom.MaxCapacity)
+            if (newRoom == null || OccupancyService.ActiveCount(db, newRoomId) >= newRoom.MaxCapacity)
             {
                 TempData["Error"] = "Phòng mới đã đầy hoặc không tồn tại!";
                 return RedirectToAction("Transfer");
@@ -244,31 +244,21 @@ namespace Qlykytucxa.Controllers
 
             RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
 
-            // 1. Kết thúc phòng cũ
+            // 1. Kết thúc hợp đồng phòng cũ
             oldReg.Status = DormConstants.StatusDaTraPhong;
             oldReg.CheckOutDate = DateTime.Now;
 
-            var oldRoom = db.Rooms.Find(oldReg.RoomId);
-            if (oldRoom != null && (oldRoom.CurrentOccupancy ?? 0) > 0)
-            {
-                oldRoom.CurrentOccupancy -= 1;
-            }
-
-            // 2. Tạo phòng mới
-            var newReg = new RoomRegistrations
+            // 2. Tạo hợp đồng phòng mới (cùng 1 lần SaveChanges -> cùng transaction)
+            db.RoomRegistrations.Add(new RoomRegistrations
             {
                 StudentId = oldReg.StudentId,
                 RoomId = newRoomId,
-                CheckInDate = DateTime.Now,
-                CheckOutDate = DateTime.Now.AddMonths(6),
+                CheckInDate = DateTime.Today,
+                CheckOutDate = DateTime.Today.AddMonths(6),
                 Status = DormConstants.StatusDangO
-            };
-            db.RoomRegistrations.Add(newReg);
-
-            // 3. Tăng sĩ số phòng mới
-            newRoom.CurrentOccupancy = (newRoom.CurrentOccupancy ?? 0) + 1;
-
+            });
             db.SaveChanges();
+            OccupancyService.Recalculate(db);
 
             TempData["Success"] = $"Chuyển sinh viên {oldReg.Students.FullName} từ phòng {oldReg.Rooms.RoomNumber} sang phòng {newRoom.RoomNumber} thành công!";
             return RedirectToAction("Index");
@@ -280,21 +270,23 @@ namespace Qlykytucxa.Controllers
         public ActionResult CheckOut(int id)
         {
             var reg = db.RoomRegistrations.Include(r => r.Students).Include(r => r.Rooms).FirstOrDefault(r => r.RegistrationId == id);
-            if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở"))
+            if (reg != null && reg.Status == DormConstants.StatusDangO)
             {
                 RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
                 reg.Status = DormConstants.StatusDaTraPhong;
                 reg.CheckOutDate = DateTime.Now;
-
-                var room = db.Rooms.Find(reg.RoomId);
-                if (room != null && (room.CurrentOccupancy ?? 0) > 0)
-                {
-                    room.CurrentOccupancy -= 1;
-                }
                 db.SaveChanges();
+                OccupancyService.Recalculate(db);
                 TempData["Success"] = $"Sinh viên {reg.Students.FullName} đã trả phòng {reg.Rooms.RoomNumber} thành công!";
             }
             return RedirectToAction("Index");
+        }
+
+        private void PopulateEditLists(RoomRegistrations reg)
+        {
+            ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber", reg.RoomId);
+            ViewBag.StudentId = new SelectList(db.Students.OrderBy(s => s.StudentCode), "StudentId", "FullName", reg.StudentId);
+            ViewBag.StatusList = new SelectList(ValidStatuses, reg.Status);
         }
 
         // GET: RoomRegistrations/Edit/5
@@ -304,8 +296,7 @@ namespace Qlykytucxa.Controllers
             RoomRegistrations roomRegistrations = db.RoomRegistrations.Find(id);
             if (roomRegistrations == null) return HttpNotFound();
 
-            ViewBag.RoomId = new SelectList(db.Rooms, "RoomId", "RoomNumber", roomRegistrations.RoomId);
-            ViewBag.StudentId = new SelectList(db.Students, "StudentId", "FullName", roomRegistrations.StudentId);
+            PopulateEditLists(roomRegistrations);
             return View(roomRegistrations);
         }
 
@@ -314,32 +305,58 @@ namespace Qlykytucxa.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "RegistrationId,StudentId,RoomId,CheckInDate,CheckOutDate,Status")] RoomRegistrations roomRegistrations)
         {
-            if (ModelState.IsValid)
+            var existing = db.RoomRegistrations.Find(roomRegistrations.RegistrationId);
+            if (existing == null) return HttpNotFound();
+            string oldStatus = existing.Status;
+
+            if (!ValidStatuses.Contains(roomRegistrations.Status))
             {
-                var oldReg = db.RoomRegistrations.AsNoTracking().FirstOrDefault(r => r.RegistrationId == roomRegistrations.RegistrationId);
-                if (oldReg != null && oldReg.RoomId != roomRegistrations.RoomId)
+                ModelState.AddModelError("Status", "Trạng thái không hợp lệ!");
+            }
+            if (roomRegistrations.CheckOutDate.HasValue && roomRegistrations.CheckOutDate.Value <= roomRegistrations.CheckInDate)
+            {
+                ModelState.AddModelError("CheckOutDate", "Ngày trả phòng phải sau ngày vào ở!");
+            }
+
+            if (roomRegistrations.Status == DormConstants.StatusDangO)
+            {
+                var room = db.Rooms.Find(roomRegistrations.RoomId);
+                if (room == null)
                 {
-                    if (oldReg.Status == DormConstants.StatusDangO || oldReg.Status == "Đang ở")
-                    {
-                        var oldRoom = db.Rooms.Find(oldReg.RoomId);
-                        if (oldRoom != null && (oldRoom.CurrentOccupancy ?? 0) > 0)
-                            oldRoom.CurrentOccupancy -= 1;
-                    }
-                    if (roomRegistrations.Status == DormConstants.StatusDangO || roomRegistrations.Status == "Đang ở")
-                    {
-                        var newRoom = db.Rooms.Find(roomRegistrations.RoomId);
-                        if (newRoom != null)
-                            newRoom.CurrentOccupancy = (newRoom.CurrentOccupancy ?? 0) + 1;
-                    }
+                    ModelState.AddModelError("RoomId", "Vui lòng chọn phòng hợp lệ!");
+                }
+                else if (OccupancyService.ActiveCount(db, room.RoomId, roomRegistrations.RegistrationId) >= room.MaxCapacity)
+                {
+                    ModelState.AddModelError("RoomId", $"Phòng {room.RoomNumber} đã đủ {room.MaxCapacity} người!");
                 }
 
-                db.Entry(roomRegistrations).State = EntityState.Modified;
+                bool hasOtherActive = db.RoomRegistrations.Any(r => r.StudentId == roomRegistrations.StudentId
+                                                                 && r.RegistrationId != roomRegistrations.RegistrationId
+                                                                 && r.Status == DormConstants.StatusDangO);
+                if (hasOtherActive)
+                {
+                    ModelState.AddModelError("StudentId", "Sinh viên này đang có một hợp đồng khác còn hiệu lực!");
+                }
+            }
+
+            if (ModelState.IsValid)
+            {
+                if (oldStatus == DormConstants.StatusDangO && roomRegistrations.Status != DormConstants.StatusDangO)
+                {
+                    RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong truoc khi ket thuc hop dong
+                }
+
+                existing.StudentId = roomRegistrations.StudentId;
+                existing.RoomId = roomRegistrations.RoomId;
+                existing.CheckInDate = roomRegistrations.CheckInDate;
+                existing.CheckOutDate = roomRegistrations.CheckOutDate;
+                existing.Status = roomRegistrations.Status;
                 db.SaveChanges();
+                OccupancyService.Recalculate(db);
                 TempData["Success"] = "Cập nhật thông tin xếp phòng thành công!";
                 return RedirectToAction("Index");
             }
-            ViewBag.RoomId = new SelectList(db.Rooms, "RoomId", "RoomNumber", roomRegistrations.RoomId);
-            ViewBag.StudentId = new SelectList(db.Students, "StudentId", "FullName", roomRegistrations.StudentId);
+            PopulateEditLists(roomRegistrations);
             return View(roomRegistrations);
         }
 
@@ -375,17 +392,12 @@ namespace Qlykytucxa.Controllers
                 shared.RoomFeePayments.RemoveRange(fees);
                 shared.SaveChanges();
 
-                if (roomRegistrations.Status == DormConstants.StatusDangO || roomRegistrations.Status == "Đang ở")
-                {
-                    var room = db.Rooms.Find(roomRegistrations.RoomId);
-                    if (room != null && (room.CurrentOccupancy ?? 0) > 0)
-                        room.CurrentOccupancy -= 1;
-                }
-
                 db.RoomRegistrations.Remove(roomRegistrations);
                 db.SaveChanges();
                 tx.Commit();
             }
+            OccupancyService.Recalculate(db);
+
             TempData["Success"] = "Xóa hợp đồng nội trú thành công!";
             return RedirectToAction("Index");
         }

@@ -79,7 +79,7 @@
                         {
                             // Đếm số sinh viên thực tế đang ở trong phòng từ bảng hợp đồng
                             int liveOcc = item.RoomRegistrations != null 
-                                          ? item.RoomRegistrations.Count(r => r.Status == "Đang ở" || r.Status == "Dang o") 
+                                          ? item.RoomRegistrations.Count(r => r.Status == Qlykytucxa.Models.DormConstants.StatusDangO) 
                                           : 0;
                             
                             int occ = Math.Max(liveOcc, item.CurrentOccupancy ?? 0);

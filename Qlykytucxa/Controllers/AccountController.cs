@@ -73,7 +73,7 @@ namespace Qlykytucxa.Controllers
             {
                 // Tìm thông tin phòng đang ở
                 var activeReg = db.RoomRegistrations.Include(r => r.Rooms)
-                    .FirstOrDefault(r => r.StudentId == student.StudentId && (r.Status == "Đang ở" || r.Status == DormConstants.StatusDangO));
+                    .FirstOrDefault(r => r.StudentId == student.StudentId && r.Status == DormConstants.StatusDangO);
 
                 var sessionUser = new UserSession
                 {

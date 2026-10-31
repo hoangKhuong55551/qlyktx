@@ -18,28 +18,9 @@ namespace Qlykytucxa.Controllers
         private MiniDormDBEntities db = new MiniDormDBEntities();
         private DormExtContext ext = new DormExtContext();
 
-        // GET: Rooms (Tìm kiếm, Lọc tòa nhà, Lọc tình trạng phòng & Tự động đồng bộ số người đang ở)
+        // GET: Rooms (Tìm kiếm, Lọc tòa nhà, Lọc tình trạng phòng)
         public ActionResult Index(string searchString, string buildingFilter, string statusFilter)
         {
-            // TỰ ĐỘNG ĐỒNG BỘ: Đếm chính xác số sinh viên thực tế đang ở để cập nhật CurrentOccupancy vào database
-            var allRooms = db.Rooms.Include(r => r.RoomRegistrations).ToList();
-            bool needSave = false;
-            foreach (var r in allRooms)
-            {
-                int actualOcc = r.RoomRegistrations.Count(reg => reg.Status == DormConstants.StatusDangO 
-                                                              || reg.Status == "Đang ở" 
-                                                              || reg.Status == "Dang o");
-                if (r.CurrentOccupancy != actualOcc)
-                {
-                    r.CurrentOccupancy = actualOcc;
-                    needSave = true;
-                }
-            }
-            if (needSave)
-            {
-                db.SaveChanges();
-            }
-
             var rooms = db.Rooms.Include(r => r.RoomRegistrations).AsQueryable();
 
             if (!string.IsNullOrEmpty(searchString))
@@ -82,16 +63,6 @@ namespace Qlykytucxa.Controllers
                             .FirstOrDefault(r => r.RoomId == id);
             
             if (rooms == null) return HttpNotFound();
-
-            int actualOccupancy = rooms.RoomRegistrations.Count(r => r.Status == DormConstants.StatusDangO 
-                                                                 || r.Status == "Đang ở" 
-                                                                 || r.Status == "Dang o");
-            if (rooms.CurrentOccupancy != actualOccupancy)
-            {
-                rooms.CurrentOccupancy = actualOccupancy;
-                db.SaveChanges();
-            }
-
             return View(rooms);
         }
 
@@ -101,19 +72,15 @@ namespace Qlykytucxa.Controllers
         public ActionResult RemoveStudent(int registrationId, int roomId)
         {
             var reg = db.RoomRegistrations.Include(r => r.Students).FirstOrDefault(r => r.RegistrationId == registrationId);
-            if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở" || reg.Status == "Dang o"))
+            if (reg != null && reg.RoomId == roomId && reg.Status == DormConstants.StatusDangO)
             {
                 RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
                 reg.Status = DormConstants.StatusDaTraPhong;
                 reg.CheckOutDate = DateTime.Now;
+                db.SaveChanges();
+                OccupancyService.Recalculate(db);
 
                 var room = db.Rooms.Find(roomId);
-                if (room != null && (room.CurrentOccupancy ?? 0) > 0)
-                {
-                    room.CurrentOccupancy -= 1;
-                }
-
-                db.SaveChanges();
                 TempData["Success"] = $"Đã đưa sinh viên {reg.Students.FullName} ({reg.Students.StudentCode}) ra khỏi phòng {room.RoomNumber} thành công!";
             }
             else
@@ -127,13 +94,13 @@ namespace Qlykytucxa.Controllers
         // GET: Rooms/Create
         public ActionResult Create()
         {
-            return View();
+            return View(new Rooms { CurrentOccupancy = 0 });
         }
 
         // POST: Rooms/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "RoomId,RoomNumber,RoomType,MaxCapacity,CurrentOccupancy,RoomPrice")] Rooms rooms)
+        public ActionResult Create([Bind(Include = "RoomNumber,RoomType,MaxCapacity,RoomPrice")] Rooms rooms)
         {
             if (db.Rooms.Any(r => r.RoomNumber == rooms.RoomNumber))
             {
@@ -142,7 +109,7 @@ namespace Qlykytucxa.Controllers
 
             if (ModelState.IsValid)
             {
-                if (rooms.CurrentOccupancy == null) rooms.CurrentOccupancy = 0;
+                rooms.CurrentOccupancy = 0; // so nguoi o duoc tinh tu hop dong, khong nhap tay
                 db.Rooms.Add(rooms);
                 db.SaveChanges();
                 TempData["Success"] = $"Thêm mới phòng {rooms.RoomNumber} thành công!";
@@ -164,16 +131,29 @@ namespace Qlykytucxa.Controllers
         // POST: Rooms/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "RoomId,RoomNumber,RoomType,MaxCapacity,CurrentOccupancy,RoomPrice")] Rooms rooms)
+        public ActionResult Edit([Bind(Include = "RoomId,RoomNumber,RoomType,MaxCapacity,RoomPrice")] Rooms rooms)
         {
+            var existing = db.Rooms.Find(rooms.RoomId);
+            if (existing == null) return HttpNotFound();
+
             if (db.Rooms.Any(r => r.RoomNumber == rooms.RoomNumber && r.RoomId != rooms.RoomId))
             {
                 ModelState.AddModelError("RoomNumber", "Số phòng này đã trùng với một phòng khác!");
             }
 
+            int activeCount = OccupancyService.ActiveCount(db, rooms.RoomId);
+            if (rooms.MaxCapacity < activeCount)
+            {
+                ModelState.AddModelError("MaxCapacity", $"Phòng đang có {activeCount} sinh viên ở, sức chứa không được nhỏ hơn số này!");
+            }
+
             if (ModelState.IsValid)
             {
-                db.Entry(rooms).State = EntityState.Modified;
+                // So nguoi dang o (CurrentOccupancy) giu nguyen, khong cho sua tay
+                existing.RoomNumber = rooms.RoomNumber;
+                existing.RoomType = rooms.RoomType;
+                existing.MaxCapacity = rooms.MaxCapacity;
+                existing.RoomPrice = rooms.RoomPrice;
                 db.SaveChanges();
                 TempData["Success"] = $"Cập nhật thông tin phòng {rooms.RoomNumber} thành công!";
                 return RedirectToAction("Index");
@@ -195,7 +175,9 @@ namespace Qlykytucxa.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            bool hasActiveStudents = db.RoomRegistrations.Any(r => r.RoomId == id && (r.Status == DormConstants.StatusDangO || r.Status == "Đang ở" || r.Status == "Dang o"));
+            if (db.Rooms.Find(id) == null) return HttpNotFound();
+
+            bool hasActiveStudents = db.RoomRegistrations.Any(r => r.RoomId == id && r.Status == DormConstants.StatusDangO);
             if (hasActiveStudents)
             {
                 ModelState.AddModelError("", "Không thể xóa phòng đang có sinh viên cư trú!");

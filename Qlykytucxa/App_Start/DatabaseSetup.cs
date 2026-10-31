@@ -91,6 +91,14 @@ CREATE TABLE dbo.RoomFeePayments (
                 }
                 ImportJsonData(appDataPath);
 
+                using (var db = new MiniDormDBEntities())
+                {
+                    // Form sua hop dong cu luu trang thai khong dau -> chuan hoa ve hang so co dau
+                    db.Database.ExecuteSqlCommand("UPDATE dbo.RoomRegistrations SET Status = {0} WHERE Status = N'Dang o'", DormConstants.StatusDangO);
+                    db.Database.ExecuteSqlCommand("UPDATE dbo.RoomRegistrations SET Status = {0} WHERE Status = N'Da tra phong'", DormConstants.StatusDaTraPhong);
+                    Services.OccupancyService.Recalculate(db);
+                }
+
                 _initialized = true;
             }
         }

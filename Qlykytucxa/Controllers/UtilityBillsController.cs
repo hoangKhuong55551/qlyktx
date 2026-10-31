@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.Mvc;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
+using Qlykytucxa.Services;
 
 namespace Qlykytucxa.Controllers
 {
@@ -81,7 +82,7 @@ namespace Qlykytucxa.Controllers
 
             // Lấy danh sách sinh viên đang ở trong phòng này để hiển thị trên hóa đơn
             var occupants = db.RoomRegistrations.Include(r => r.Students)
-                .Where(r => r.RoomId == bill.RoomId && (r.Status == "Đang ở" || r.Status == DormConstants.StatusDangO))
+                .Where(r => r.RoomId == bill.RoomId && r.Status == DormConstants.StatusDangO)
                 .Select(r => r.Students.FullName)
                 .ToList();
             ViewBag.Occupants = occupants;
@@ -132,12 +133,42 @@ namespace Qlykytucxa.Controllers
                 string bld = (b.Rooms != null && !string.IsNullOrEmpty(b.Rooms.RoomNumber) && char.IsLetter(b.Rooms.RoomNumber[0])) ? ("Tòa " + b.Rooms.RoomNumber[0]) : "Khu KTX";
                 string status = b.IsPaid ? "Đã thanh toán" : "Chưa thanh toán";
 
-                sb.AppendLine($"HD{b.BillId:D4},{roomNo},{bld},Tháng {b.BillingMonth}/{b.BillingYear},{b.OldElectricIndex},{b.NewElectricIndex},{eUsed},{eCost},{b.OldWaterIndex},{b.NewWaterIndex},{wUsed},{wCost},{b.TotalAmount},{status}");
+                sb.AppendLine(CsvHelper.Row($"HD{b.BillId:D4}", roomNo, bld, $"Tháng {b.BillingMonth}/{b.BillingYear}", b.OldElectricIndex, b.NewElectricIndex, eUsed, eCost, b.OldWaterIndex, b.NewWaterIndex, wUsed, wCost, b.TotalAmount, status));
             }
 
             byte[] bytes = Encoding.UTF8.GetBytes(sb.ToString());
             string fileName = $"BaoCao_HoaDonDienNuoc_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
             return File(bytes, "text/csv; charset=utf-8", fileName);
+        }
+
+        // Kiem tra chung cho Lap / Sua hoa don
+        private void ValidateBill(UtilityBills bill)
+        {
+            if (bill.OldElectricIndex < 0 || bill.OldWaterIndex < 0)
+            {
+                ModelState.AddModelError("OldElectricIndex", "Chỉ số công tơ không được âm!");
+            }
+            if (bill.NewElectricIndex < bill.OldElectricIndex)
+            {
+                ModelState.AddModelError("NewElectricIndex", "Chỉ số điện mới không được nhỏ hơn chỉ số cũ!");
+            }
+            if (bill.NewWaterIndex < bill.OldWaterIndex)
+            {
+                ModelState.AddModelError("NewWaterIndex", "Chỉ số nước mới không được nhỏ hơn chỉ số cũ!");
+            }
+            if (db.Rooms.Find(bill.RoomId) == null)
+            {
+                ModelState.AddModelError("RoomId", "Vui lòng chọn phòng hợp lệ!");
+            }
+
+            bool duplicateBill = db.UtilityBills.Any(b => b.RoomId == bill.RoomId
+                                                        && b.BillingMonth == bill.BillingMonth
+                                                        && b.BillingYear == bill.BillingYear
+                                                        && b.BillId != bill.BillId);
+            if (duplicateBill)
+            {
+                ModelState.AddModelError("BillingMonth", $"Phòng này đã có hóa đơn tháng {bill.BillingMonth}/{bill.BillingYear} rồi!");
+            }
         }
 
         // GET: UtilityBills/Create
@@ -154,22 +185,7 @@ namespace Qlykytucxa.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "BillId,RoomId,BillingMonth,BillingYear,OldElectricIndex,NewElectricIndex,OldWaterIndex,NewWaterIndex,TotalAmount,IsPaid")] UtilityBills bill)
         {
-            if (bill.NewElectricIndex < bill.OldElectricIndex)
-            {
-                ModelState.AddModelError("NewElectricIndex", "Chỉ số điện mới không được nhỏ hơn chỉ số cũ!");
-            }
-            if (bill.NewWaterIndex < bill.OldWaterIndex)
-            {
-                ModelState.AddModelError("NewWaterIndex", "Chỉ số nước mới không được nhỏ hơn chỉ số cũ!");
-            }
-
-            bool duplicateBill = db.UtilityBills.Any(b => b.RoomId == bill.RoomId
-                                                        && b.BillingMonth == bill.BillingMonth
-                                                        && b.BillingYear == bill.BillingYear);
-            if (duplicateBill)
-            {
-                ModelState.AddModelError("BillingMonth", $"Phòng này đã có hóa đơn tháng {bill.BillingMonth}/{bill.BillingYear} rồi!");
-            }
+            ValidateBill(bill);
 
             if (ModelState.IsValid)
             {
@@ -199,8 +215,32 @@ namespace Qlykytucxa.Controllers
             var bill = db.UtilityBills.Include(b => b.Rooms).FirstOrDefault(b => b.BillId == id);
             if (bill != null && !bill.IsPaid)
             {
-                bill.IsPaid = true;
-                db.SaveChanges();
+                // Danh dau da thu + ghi but toan vao So quy trong cung 1 transaction
+                using (var tx = db.Database.BeginTransaction())
+                using (var shared = DormExtContext.ShareConnection(db))
+                {
+                    shared.Database.UseTransaction(tx.UnderlyingTransaction);
+
+                    bill.IsPaid = true;
+                    db.SaveChanges();
+
+                    if (bill.TotalAmount > 0)
+                    {
+                        shared.CashFlowTransactions.Add(new CashFlowTransaction
+                        {
+                            TransactionDate = DateTime.Now,
+                            Type = DormConstants.GiaoDichThu,
+                            Category = DormConstants.KhoanDienNuoc,
+                            Amount = bill.TotalAmount,
+                            RelatedPerson = $"Phòng {bill.Rooms.RoomNumber}",
+                            RoomNumber = bill.Rooms.RoomNumber,
+                            Description = $"Thu tiền điện nước tháng {bill.BillingMonth}/{bill.BillingYear} phòng {bill.Rooms.RoomNumber}",
+                            PaymentMethod = paymentMethod
+                        });
+                        shared.SaveChanges();
+                    }
+                    tx.Commit();
+                }
                 TempData["Success"] = $"Đã xác nhận thanh toán {bill.TotalAmount:N0} đ (Phương thức: {paymentMethod}) cho phòng {bill.Rooms.RoomNumber} thành công!";
             }
             return RedirectToAction("Index");
@@ -212,6 +252,11 @@ namespace Qlykytucxa.Controllers
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             UtilityBills utilityBills = db.UtilityBills.Find(id);
             if (utilityBills == null) return HttpNotFound();
+            if (utilityBills.IsPaid)
+            {
+                TempData["Error"] = "Hóa đơn đã thanh toán (đã ghi sổ quỹ) nên không được sửa!";
+                return RedirectToAction("Index");
+            }
 
             ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber", utilityBills.RoomId);
             ViewBag.ElectricPrice = DormConstants.ElectricPrice;
@@ -222,16 +267,32 @@ namespace Qlykytucxa.Controllers
         // POST: UtilityBills/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "BillId,RoomId,BillingMonth,BillingYear,OldElectricIndex,NewElectricIndex,OldWaterIndex,NewWaterIndex,TotalAmount,IsPaid")] UtilityBills utilityBills)
+        public ActionResult Edit([Bind(Include = "BillId,RoomId,BillingMonth,BillingYear,OldElectricIndex,NewElectricIndex,OldWaterIndex,NewWaterIndex")] UtilityBills utilityBills)
         {
+            var existing = db.UtilityBills.Find(utilityBills.BillId);
+            if (existing == null) return HttpNotFound();
+            if (existing.IsPaid)
+            {
+                TempData["Error"] = "Hóa đơn đã thanh toán (đã ghi sổ quỹ) nên không được sửa!";
+                return RedirectToAction("Index");
+            }
+
+            ValidateBill(utilityBills);
+
             if (ModelState.IsValid)
             {
                 int electricUsed = utilityBills.NewElectricIndex - utilityBills.OldElectricIndex;
                 int waterUsed = utilityBills.NewWaterIndex - utilityBills.OldWaterIndex;
 
-                utilityBills.TotalAmount = (electricUsed * DormConstants.ElectricPrice) + (waterUsed * DormConstants.WaterPrice);
-
-                db.Entry(utilityBills).State = EntityState.Modified;
+                // Trang thai thanh toan chi doi qua chuc nang Thu tien (PayBill)
+                existing.RoomId = utilityBills.RoomId;
+                existing.BillingMonth = utilityBills.BillingMonth;
+                existing.BillingYear = utilityBills.BillingYear;
+                existing.OldElectricIndex = utilityBills.OldElectricIndex;
+                existing.NewElectricIndex = utilityBills.NewElectricIndex;
+                existing.OldWaterIndex = utilityBills.OldWaterIndex;
+                existing.NewWaterIndex = utilityBills.NewWaterIndex;
+                existing.TotalAmount = (electricUsed * DormConstants.ElectricPrice) + (waterUsed * DormConstants.WaterPrice);
                 db.SaveChanges();
                 TempData["Success"] = "Cập nhật hóa đơn điện nước thành công!";
                 return RedirectToAction("Index");
@@ -257,6 +318,12 @@ namespace Qlykytucxa.Controllers
         public ActionResult DeleteConfirmed(int id)
         {
             UtilityBills utilityBills = db.UtilityBills.Find(id);
+            if (utilityBills == null) return HttpNotFound();
+            if (utilityBills.IsPaid)
+            {
+                TempData["Error"] = "Không thể xóa hóa đơn đã thanh toán (đã ghi sổ quỹ)!";
+                return RedirectToAction("Index");
+            }
             db.UtilityBills.Remove(utilityBills);
             db.SaveChanges();
             TempData["Success"] = "Xóa hóa đơn điện nước thành công!";

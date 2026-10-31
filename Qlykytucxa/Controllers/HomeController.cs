@@ -16,29 +16,12 @@ namespace Qlykytucxa.Controllers
 
         public ActionResult Index()
         {
-            // Tự động đồng bộ số người đang ở của từng phòng theo số hợp đồng thực tế
-            var allRooms = db.Rooms.Include(r => r.RoomRegistrations).ToList();
-            bool needSave = false;
-            foreach (var r in allRooms)
-            {
-                int liveCount = r.RoomRegistrations.Count(reg => reg.Status == DormConstants.StatusDangO 
-                                                               || reg.Status == "Đang ở" 
-                                                               || reg.Status == "Dang o");
-                if (r.CurrentOccupancy != liveCount)
-                {
-                    r.CurrentOccupancy = liveCount;
-                    needSave = true;
-                }
-            }
-            if (needSave)
-            {
-                db.SaveChanges();
-            }
+            var allRooms = db.Rooms.ToList();
 
             // 1. Thống kê số lượng tổng quan
             ViewBag.TotalStudents = db.Students.Count();
             ViewBag.TotalRooms = allRooms.Count;
-            ViewBag.ActiveContracts = db.RoomRegistrations.Count(r => r.Status == DormConstants.StatusDangO || r.Status == "Đang ở" || r.Status == "Dang o");
+            ViewBag.ActiveContracts = db.RoomRegistrations.Count(r => r.Status == DormConstants.StatusDangO);
             ViewBag.UnpaidBills = db.UtilityBills.Count(b => !b.IsPaid);
             ViewBag.UnpaidAmount = db.UtilityBills.Where(b => !b.IsPaid).Sum(b => (decimal?)b.TotalAmount) ?? 0;
 
@@ -111,7 +94,7 @@ namespace Qlykytucxa.Controllers
             var expiringContracts = db.RoomRegistrations
                                       .Include(r => r.Students)
                                       .Include(r => r.Rooms)
-                                      .Where(r => (r.Status == DormConstants.StatusDangO || r.Status == "Đang ở" || r.Status == "Dang o")
+                                      .Where(r => r.Status == DormConstants.StatusDangO
                                                && r.CheckOutDate.HasValue 
                                                && r.CheckOutDate.Value <= in30Days)
                                       .OrderBy(r => r.CheckOutDate.Value)

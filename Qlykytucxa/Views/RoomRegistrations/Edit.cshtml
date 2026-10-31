@@ -42,9 +42,7 @@
 
             <div class="mb-3">
                 @Html.LabelFor(model => model.Status, "Trang thai", htmlAttributes: new { @class = "form-label fw-bold" })
-                @Html.DropDownListFor(model => model.Status,
-                    new SelectList(new[] { "Dang o", "Da tra phong" }, Model.Status),
-                    new { @class = "form-select" })
+                @Html.DropDownListFor(model => model.Status, (SelectList)ViewBag.StatusList, new { @class = "form-select" })
                 @Html.ValidationMessageFor(model => model.Status, "", new { @class = "text-danger" })
             </div>
 

@@ -39,8 +39,8 @@
 
             <div class="mb-3">
                 @Html.LabelFor(model => model.CurrentOccupancy, "So nguoi dang o", htmlAttributes: new { @class = "form-label fw-bold" })
-                @Html.EditorFor(model => model.CurrentOccupancy, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.CurrentOccupancy, "", new { @class = "text-danger" })
+                <input type="text" class="form-control" value="@(Model.CurrentOccupancy ?? 0)" readonly />
+                <small class="text-muted">Tự động tính từ các hợp đồng đang ở</small>
             </div>
 
             <div class="mb-3">

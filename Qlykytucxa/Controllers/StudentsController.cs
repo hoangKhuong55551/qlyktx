@@ -153,6 +153,7 @@ namespace Qlykytucxa.Controllers
             }
 
             Students students = db.Students.Find(id);
+            if (students == null) return HttpNotFound();
             db.Students.Remove(students);
             db.SaveChanges();
             TempData["Success"] = "Xóa hồ sơ sinh viên thành công!";

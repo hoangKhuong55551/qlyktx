@@ -212,7 +212,7 @@ namespace Qlykytucxa.Controllers
 
             foreach (var t in items)
             {
-                sb.AppendLine($"GD{t.Id:D4},{t.TransactionDate:dd/MM/yyyy HH:mm},{t.Type},{t.Category},{t.Amount},{t.RelatedPerson},{t.RoomNumber},{t.PaymentMethod},\"{t.Description}\"");
+                sb.AppendLine(CsvHelper.Row($"GD{t.Id:D4}", t.TransactionDate.ToString("dd/MM/yyyy HH:mm"), t.Type, t.Category, t.Amount, t.RelatedPerson, t.RoomNumber, t.PaymentMethod, t.Description));
             }
 
             byte[] bytes = Encoding.UTF8.GetBytes(sb.ToString());
