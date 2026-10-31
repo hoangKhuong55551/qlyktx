@@ -17,6 +17,26 @@ namespace Qlykytucxa.Controllers
     public class UtilityBillsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
+
+        // Hien don gia dang ap dung cho ky hoa don tren form Lap/Sua
+        private void SetPriceViewBag(int year, int month)
+        {
+            var price = FinanceService.GetUtilityPrice(ext, year, month);
+            ViewBag.ElectricPrice = price.ElectricPrice;
+            ViewBag.WaterPrice = price.WaterPrice;
+            ViewBag.PricePeriod = $"{month:D2}/{year}";
+        }
+
+        // Tinh tien theo don gia cua ky hoa don va luu lai don gia da ap dung
+        private void ApplyPrice(UtilityBills bill)
+        {
+            var price = FinanceService.GetUtilityPrice(ext, bill.BillingYear, bill.BillingMonth);
+            bill.ElectricUnitPrice = price.ElectricPrice;
+            bill.WaterUnitPrice = price.WaterPrice;
+            bill.TotalAmount = (bill.NewElectricIndex - bill.OldElectricIndex) * price.ElectricPrice
+                             + (bill.NewWaterIndex - bill.OldWaterIndex) * price.WaterPrice;
+        }
 
         // GET: UtilityBills (Tìm kiếm, Lọc tháng/năm, Lọc trạng thái thanh toán)
         public ActionResult Index(string searchString, int? monthFilter, int? yearFilter, string paymentStatus)
@@ -127,8 +147,8 @@ namespace Qlykytucxa.Controllers
             {
                 int eUsed = b.NewElectricIndex - b.OldElectricIndex;
                 int wUsed = b.NewWaterIndex - b.OldWaterIndex;
-                decimal eCost = eUsed * DormConstants.ElectricPrice;
-                decimal wCost = wUsed * DormConstants.WaterPrice;
+                decimal eCost = eUsed * (b.ElectricUnitPrice ?? DormConstants.ElectricPrice);
+                decimal wCost = wUsed * (b.WaterUnitPrice ?? DormConstants.WaterPrice);
                 string roomNo = b.Rooms != null ? b.Rooms.RoomNumber : "N/A";
                 string bld = (b.Rooms != null && !string.IsNullOrEmpty(b.Rooms.RoomNumber) && char.IsLetter(b.Rooms.RoomNumber[0])) ? ("Tòa " + b.Rooms.RoomNumber[0]) : "Khu KTX";
                 string status = b.IsPaid ? "Đã thanh toán" : "Chưa thanh toán";
@@ -175,8 +195,7 @@ namespace Qlykytucxa.Controllers
         public ActionResult Create()
         {
             ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber");
-            ViewBag.ElectricPrice = DormConstants.ElectricPrice;
-            ViewBag.WaterPrice = DormConstants.WaterPrice;
+            SetPriceViewBag(DateTime.Today.Year, DateTime.Today.Month);
             return View();
         }
 
@@ -189,11 +208,9 @@ namespace Qlykytucxa.Controllers
 
             if (ModelState.IsValid)
             {
-                int electricUsed = bill.NewElectricIndex - bill.OldElectricIndex;
-                int waterUsed = bill.NewWaterIndex - bill.OldWaterIndex;
-
-                bill.TotalAmount = (electricUsed * DormConstants.ElectricPrice) + (waterUsed * DormConstants.WaterPrice);
+                ApplyPrice(bill);
                 bill.IsPaid = false;
+                bill.PaidDate = null;
 
                 db.UtilityBills.Add(bill);
                 db.SaveChanges();
@@ -202,8 +219,8 @@ namespace Qlykytucxa.Controllers
             }
 
             ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber", bill.RoomId);
-            ViewBag.ElectricPrice = DormConstants.ElectricPrice;
-            ViewBag.WaterPrice = DormConstants.WaterPrice;
+            if (bill.BillingMonth >= 1 && bill.BillingMonth <= 12 && bill.BillingYear >= 2000) SetPriceViewBag(bill.BillingYear, bill.BillingMonth);
+            else SetPriceViewBag(DateTime.Today.Year, DateTime.Today.Month);
             return View(bill);
         }
 
@@ -222,6 +239,7 @@ namespace Qlykytucxa.Controllers
                     shared.Database.UseTransaction(tx.UnderlyingTransaction);
 
                     bill.IsPaid = true;
+                    bill.PaidDate = DateTime.Now;
                     db.SaveChanges();
 
                     if (bill.TotalAmount > 0)
@@ -235,7 +253,9 @@ namespace Qlykytucxa.Controllers
                             RelatedPerson = $"Phòng {bill.Rooms.RoomNumber}",
                             RoomNumber = bill.Rooms.RoomNumber,
                             Description = $"Thu tiền điện nước tháng {bill.BillingMonth}/{bill.BillingYear} phòng {bill.Rooms.RoomNumber}",
-                            PaymentMethod = paymentMethod
+                            PaymentMethod = paymentMethod,
+                            CreatedBy = FinanceService.CurrentUserName(Session),
+                            UtilityBillId = bill.BillId
                         });
                         shared.SaveChanges();
                     }
@@ -259,8 +279,7 @@ namespace Qlykytucxa.Controllers
             }
 
             ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber", utilityBills.RoomId);
-            ViewBag.ElectricPrice = DormConstants.ElectricPrice;
-            ViewBag.WaterPrice = DormConstants.WaterPrice;
+            SetPriceViewBag(utilityBills.BillingYear, utilityBills.BillingMonth);
             return View(utilityBills);
         }
 
@@ -281,9 +300,6 @@ namespace Qlykytucxa.Controllers
 
             if (ModelState.IsValid)
             {
-                int electricUsed = utilityBills.NewElectricIndex - utilityBills.OldElectricIndex;
-                int waterUsed = utilityBills.NewWaterIndex - utilityBills.OldWaterIndex;
-
                 // Trang thai thanh toan chi doi qua chuc nang Thu tien (PayBill)
                 existing.RoomId = utilityBills.RoomId;
                 existing.BillingMonth = utilityBills.BillingMonth;
@@ -292,14 +308,13 @@ namespace Qlykytucxa.Controllers
                 existing.NewElectricIndex = utilityBills.NewElectricIndex;
                 existing.OldWaterIndex = utilityBills.OldWaterIndex;
                 existing.NewWaterIndex = utilityBills.NewWaterIndex;
-                existing.TotalAmount = (electricUsed * DormConstants.ElectricPrice) + (waterUsed * DormConstants.WaterPrice);
+                ApplyPrice(existing); // tinh lai theo don gia cua ky hoa don
                 db.SaveChanges();
                 TempData["Success"] = "Cập nhật hóa đơn điện nước thành công!";
                 return RedirectToAction("Index");
             }
             ViewBag.RoomId = new SelectList(db.Rooms.OrderBy(r => r.RoomNumber), "RoomId", "RoomNumber", utilityBills.RoomId);
-            ViewBag.ElectricPrice = DormConstants.ElectricPrice;
-            ViewBag.WaterPrice = DormConstants.WaterPrice;
+            SetPriceViewBag(existing.BillingYear, existing.BillingMonth);
             return View(utilityBills);
         }
 
@@ -324,6 +339,11 @@ namespace Qlykytucxa.Controllers
                 TempData["Error"] = "Không thể xóa hóa đơn đã thanh toán (đã ghi sổ quỹ)!";
                 return RedirectToAction("Index");
             }
+            if (ext.CashFlowTransactions.Any(t => t.UtilityBillId == id))
+            {
+                TempData["Error"] = "Hóa đơn đã có lịch sử phiếu thu (đã hủy) trong sổ quỹ nên không thể xóa!";
+                return RedirectToAction("Index");
+            }
             db.UtilityBills.Remove(utilityBills);
             db.SaveChanges();
             TempData["Success"] = "Xóa hóa đơn điện nước thành công!";
@@ -332,7 +352,11 @@ namespace Qlykytucxa.Controllers
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

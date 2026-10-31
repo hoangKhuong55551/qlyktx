@@ -37,6 +37,7 @@
                     <select name="statusFilter" class="form-select">
                         <option value="">-- Tất cả trạng thái đóng tiền --</option>
                         <option value="unpaid" @(statusFilter == "unpaid" ? "selected" : "")>Chưa nộp tiền (Công nợ)</option>
+                        <option value="overdue" @(statusFilter == "overdue" ? "selected" : "")>Quá hạn nộp</option>
                         <option value="paid" @(statusFilter == "paid" ? "selected" : "")>Đã hoàn thành</option>
                     </select>
                 </div>
@@ -69,7 +70,7 @@
                     {
                         foreach (var item in Model)
                         {
-                            <tr>
+                            <tr class="@(item.IsOverdue ? "table-danger" : "")">
                                 <td class="ps-3 fw-bold text-primary">@item.StudentCode</td>
                                 <td class="fw-semibold">@item.StudentName</td>
                                 <td>
@@ -86,11 +87,12 @@
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                             <i class="bi bi-check-circle me-1"></i>Đã đóng (@item.PaymentMethod)
                                         </span>
+                                        <div class="small text-muted">@(item.PaidDate.HasValue ? item.PaidDate.Value.ToString("dd/MM/yyyy") : "") @(string.IsNullOrEmpty(item.CollectedBy) ? "" : "- " + item.CollectedBy)</div>
                                     }
                                     else
                                     {
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                                            <i class="bi bi-clock-history me-1"></i>Chưa nộp
+                                            <i class="bi bi-clock-history me-1"></i>@(item.IsOverdue ? "Quá hạn " + item.DaysOverdue + " ngày" : "Chưa nộp")
                                         </span>
                                     }
                                 </td>

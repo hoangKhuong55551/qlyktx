@@ -5,6 +5,7 @@ using System.Linq;
 using System.Web.Mvc;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
+using Qlykytucxa.Services;
 
 namespace Qlykytucxa.Controllers
 {
@@ -83,7 +84,17 @@ namespace Qlykytucxa.Controllers
             }
             ViewBag.Incidents = incidents;
 
-            // 5. Bảng tin thông báo
+            // 5. Tiền phòng của sinh viên (sinh khoản tháng mới nếu đến kỳ) và tiền cọc
+            RoomFeeService.EnsureMonthlyFees(db, ext);
+            ViewBag.RoomFees = ext.RoomFeePayments.Where(f => f.StudentId == student.StudentId)
+                .OrderBy(f => f.IsPaid)
+                .ThenByDescending(f => f.FeeYear).ThenByDescending(f => f.FeeMonth)
+                .ToList();
+            ViewBag.Deposit = ext.Deposits.Where(d => d.StudentId == student.StudentId && d.Status != DormConstants.CocDaHuy)
+                .OrderByDescending(d => d.CollectedDate)
+                .FirstOrDefault();
+
+            // 6. Bảng tin thông báo
             ViewBag.Announcements = ext.Announcements.Where(a => a.IsActive)
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(4)

@@ -1,0 +1,216 @@
+﻿@model List<Qlykytucxa.Models.Deposit>
+@{
+    ViewBag.Title = "Tiền đặt cọc";
+    var pending = ViewBag.PendingRegistrations as List<Qlykytucxa.Models.RoomRegistrations> ?? new List<Qlykytucxa.Models.RoomRegistrations>();
+    var regStatus = ViewBag.RegistrationStatus as Dictionary<int, string> ?? new Dictionary<int, string>();
+    string dangGiu = Qlykytucxa.Models.DormConstants.CocDangGiu;
+    string daHoan = Qlykytucxa.Models.DormConstants.CocDaHoan;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="bi bi-safe-fill text-secondary me-2"></i>Quản lý Tiền đặt cọc
+        </h4>
+        <p class="text-muted mb-0 small">Tiền cọc là khoản giữ hộ, không tính vào doanh thu. Phần khấu trừ khi hoàn cọc mới được tính là doanh thu.</p>
+    </div>
+    <a href="@Url.Action("Index", "Finance")" class="btn btn-outline-secondary px-3 shadow-sm">
+        <i class="bi bi-wallet2 me-1"></i> Báo cáo Thu Chi
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Đang giữ</div>
+            <div class="fs-3 fw-bold">@Model.Where(d => d.Status == dangGiu).Sum(d => d.Amount).ToString("N0") đ</div>
+            <div class="small text-muted">@Model.Count(d => d.Status == dangGiu) khoản cọc</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Cần hoàn (SV đã rời KTX)</div>
+            <div class="fs-3 fw-bold text-danger">@Model.Count(d => d.Status == dangGiu && regStatus.ContainsKey(d.RegistrationId) && regStatus[d.RegistrationId] != Qlykytucxa.Models.DormConstants.StatusDangO)</div>
+            <div class="small text-muted">khoản</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Chưa thu cọc</div>
+            <div class="fs-3 fw-bold text-warning">@pending.Count</div>
+            <div class="small text-muted">hợp đồng đang ở</div>
+        </div>
+    </div>
+</div>
+
+<!-- Hợp đồng chưa thu cọc -->
+@if (pending.Any())
+{
+    <div class="card border-0 rounded-4 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-hourglass-split text-warning me-2"></i>Hợp đồng đang ở chưa thu cọc</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sinh viên</th>
+                            <th>Phòng</th>
+                            <th>Ngày vào ở</th>
+                            <th class="text-end">Thu cọc</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in pending)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@r.Students.FullName <small class="text-muted">(@r.Students.StudentCode)</small></td>
+                                <td><span class="badge bg-light text-dark border">@r.Rooms.RoomNumber</span></td>
+                                <td>@r.CheckInDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    @using (Html.BeginForm("CollectDeposit", "Finance", FormMethod.Post, new { @class = "d-inline-flex gap-1 align-items-center" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="registrationId" value="@r.RegistrationId" />
+                                        <input type="number" name="amount" class="form-control form-control-sm" style="width: 130px;" min="1000" step="1000" value="@r.Rooms.RoomPrice.ToString("0")" required title="Mặc định bằng 1 tháng tiền phòng (theo hợp đồng)" />
+                                        <select name="paymentMethod" class="form-select form-select-sm" style="width: 140px;">
+                                            <option value="Tiền mặt">Tiền mặt</option>
+                                            <option value="Chuyển khoản VietQR">Chuyển khoản</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Xác nhận đã thu tiền cọc của @r.Students.FullName?');">Thu cọc</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Danh sách khoản cọc -->
+<div class="card border-0 rounded-4 shadow-sm">
+    <div class="card-body p-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-list-check text-primary me-2"></i>Danh sách khoản cọc</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Sinh viên</th>
+                        <th>Phòng</th>
+                        <th>Số tiền cọc</th>
+                        <th>Ngày thu / Người thu</th>
+                        <th>Trạng thái</th>
+                        <th>Hoàn cọc</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var d in Model)
+                        {
+                            bool studentLeft = regStatus.ContainsKey(d.RegistrationId) && regStatus[d.RegistrationId] != Qlykytucxa.Models.DormConstants.StatusDangO;
+                            <tr class="@(d.Status == Qlykytucxa.Models.DormConstants.CocDaHuy ? "opacity-50" : "")">
+                                <td class="fw-semibold">@d.StudentName <small class="text-muted">(@d.StudentCode)</small></td>
+                                <td><span class="badge bg-light text-dark border">@d.RoomNumber</span></td>
+                                <td class="fw-bold">@d.Amount.ToString("N0") đ</td>
+                                <td>@d.CollectedDate.ToString("dd/MM/yyyy") <div class="small text-muted">@d.CollectedBy - @d.PaymentMethod</div></td>
+                                <td>
+                                    @if (d.Status == dangGiu)
+                                    {
+                                        <span class="badge bg-info text-dark">Đang giữ</span>
+                                        if (studentLeft)
+                                        {
+                                            <span class="badge bg-danger">Cần hoàn</span>
+                                        }
+                                    }
+                                    else if (d.Status == daHoan)
+                                    {
+                                        <span class="badge bg-success">Đã hoàn</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Đã hủy</span>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @if (d.Status == daHoan)
+                                    {
+                                        <div>Hoàn: <strong>@((d.RefundAmount ?? 0).ToString("N0")) đ</strong> (@(d.RefundedDate.HasValue ? d.RefundedDate.Value.ToString("dd/MM/yyyy") : ""))</div>
+                                        if ((d.DeductionAmount ?? 0) > 0)
+                                        {
+                                            <div class="text-danger">Khấu trừ: @d.DeductionAmount.Value.ToString("N0") đ - @d.DeductionReason</div>
+                                        }
+                                        <div class="text-muted">@d.RefundedBy</div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (d.Status == dangGiu && studentLeft)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#refundModal-@d.Id">Hoàn cọc</button>
+                                        <div class="modal fade text-start" id="refundModal-@d.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    @using (Html.BeginForm("RefundDeposit", "Finance", FormMethod.Post))
+                                                    {
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@d.Id" />
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Hoàn cọc - @d.StudentName</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Tiền cọc đang giữ: <strong>@d.Amount.ToString("N0") đ</strong></p>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Khấu trừ (VNĐ):</label>
+                                                                <input type="number" name="deductionAmount" class="form-control" min="0" max="@d.Amount.ToString("0")" step="1000" value="0" />
+                                                                <small class="text-muted">Hư hỏng tài sản, tiền phòng/điện nước còn nợ... Phần khấu trừ được tính là doanh thu.</small>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Lý do khấu trừ:</label>
+                                                                <input type="text" name="deductionReason" class="form-control" placeholder="Bắt buộc nếu có khấu trừ" />
+                                                            </div>
+                                                            <div class="mb-0">
+                                                                <label class="form-label fw-bold">Hình thức hoàn:</label>
+                                                                <select name="paymentMethod" class="form-select">
+                                                                    <option value="Tiền mặt">Tiền mặt</option>
+                                                                    <option value="Chuyển khoản">Chuyển khoản</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                            <button type="submit" class="btn btn-primary">Xác nhận hoàn cọc</button>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (d.Status == daHoan)
+                                    {
+                                        using (Html.BeginForm("CancelRefund", "Finance", FormMethod.Post, new { @class = "d-inline-flex gap-1" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@d.Id" />
+                                            <input type="text" name="reason" class="form-control form-control-sm" style="width: 160px;" placeholder="Lý do hủy hoàn" required />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Hủy việc hoàn cọc ghi nhầm">Hủy hoàn</button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Chưa có khoản cọc nào.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>Thu cọc nhầm: hủy phiếu thu cọc tương ứng trong Sổ quỹ (trang Báo cáo Thu Chi).
+        </p>
+    </div>
+</div>

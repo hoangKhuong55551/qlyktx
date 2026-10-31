@@ -24,6 +24,9 @@ namespace Qlykytucxa.Models
         public int NewWaterIndex { get; set; }
         public decimal TotalAmount { get; set; }
         public bool IsPaid { get; set; }
+        public Nullable<decimal> ElectricUnitPrice { get; set; }
+        public Nullable<decimal> WaterUnitPrice { get; set; }
+        public Nullable<System.DateTime> PaidDate { get; set; }
     
         public virtual Rooms Rooms { get; set; }
     }

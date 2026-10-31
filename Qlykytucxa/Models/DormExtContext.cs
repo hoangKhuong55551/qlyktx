@@ -45,6 +45,8 @@ namespace Qlykytucxa.Models
         public DbSet<IncidentRequest> IncidentRequests { get; set; }
         public DbSet<CashFlowTransaction> CashFlowTransactions { get; set; }
         public DbSet<RoomFeePayment> RoomFeePayments { get; set; }
+        public DbSet<Deposit> Deposits { get; set; }
+        public DbSet<UtilityPrice> UtilityPrices { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -71,6 +73,9 @@ namespace Qlykytucxa.Models
             modelBuilder.Entity<CashFlowTransaction>().Property(t => t.RelatedPerson).HasMaxLength(200);
             modelBuilder.Entity<CashFlowTransaction>().Property(t => t.RoomNumber).HasMaxLength(50);
             modelBuilder.Entity<CashFlowTransaction>().Property(t => t.PaymentMethod).HasMaxLength(50);
+            modelBuilder.Entity<CashFlowTransaction>().Property(t => t.CreatedBy).HasMaxLength(100);
+            modelBuilder.Entity<CashFlowTransaction>().Property(t => t.VoidedBy).HasMaxLength(100);
+            modelBuilder.Entity<CashFlowTransaction>().Property(t => t.VoidReason).HasMaxLength(500);
 
             modelBuilder.Entity<RoomFeePayment>().ToTable("RoomFeePayments");
             modelBuilder.Entity<RoomFeePayment>().Property(f => f.StudentCode).HasMaxLength(20);
@@ -79,6 +84,25 @@ namespace Qlykytucxa.Models
             modelBuilder.Entity<RoomFeePayment>().Property(f => f.SemesterPeriod).HasMaxLength(50);
             modelBuilder.Entity<RoomFeePayment>().Property(f => f.PaymentMethod).HasMaxLength(50);
             modelBuilder.Entity<RoomFeePayment>().Property(f => f.Note).HasMaxLength(500);
+            modelBuilder.Entity<RoomFeePayment>().Property(f => f.CollectedBy).HasMaxLength(100);
+            modelBuilder.Entity<RoomFeePayment>().Ignore(f => f.IsOverdue);
+            modelBuilder.Entity<RoomFeePayment>().Ignore(f => f.DaysOverdue);
+
+            modelBuilder.Entity<Deposit>().ToTable("Deposits");
+            modelBuilder.Entity<Deposit>().Property(d => d.StudentCode).HasMaxLength(20);
+            modelBuilder.Entity<Deposit>().Property(d => d.StudentName).HasMaxLength(100);
+            modelBuilder.Entity<Deposit>().Property(d => d.RoomNumber).HasMaxLength(20);
+            modelBuilder.Entity<Deposit>().Property(d => d.PaymentMethod).HasMaxLength(50);
+            modelBuilder.Entity<Deposit>().Property(d => d.CollectedBy).HasMaxLength(100);
+            modelBuilder.Entity<Deposit>().Property(d => d.Status).HasMaxLength(30).IsRequired();
+            modelBuilder.Entity<Deposit>().Property(d => d.DeductionReason).HasMaxLength(500);
+            modelBuilder.Entity<Deposit>().Property(d => d.RefundedBy).HasMaxLength(100);
+            modelBuilder.Entity<Deposit>().Property(d => d.Note).HasMaxLength(500);
+
+            modelBuilder.Entity<UtilityPrice>().ToTable("UtilityPrices");
+            modelBuilder.Entity<UtilityPrice>().Property(p => p.EffectiveFrom).HasColumnType("date");
+            modelBuilder.Entity<UtilityPrice>().Property(p => p.Note).HasMaxLength(200);
+            modelBuilder.Entity<UtilityPrice>().Property(p => p.CreatedBy).HasMaxLength(100);
         }
     }
 }

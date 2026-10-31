@@ -78,6 +78,81 @@ CREATE TABLE dbo.RoomFeePayments (
     CONSTRAINT UQ_RoomFeePayments_Student_Month UNIQUE (StudentId, FeeYear, FeeMonth)
 );";
 
+        // Nang cap cho chuc nang tai chinh (dat coc, bang gia, huy phieu, nguoi thu).
+        // Moi lenh chay rieng (cot moi them o lenh truoc moi dung duoc o lenh sau) va deu chay lai duoc nhieu lan.
+        public static readonly string[] FinanceUpgradeSql =
+        {
+@"IF OBJECT_ID(N'dbo.Deposits', N'U') IS NULL
+CREATE TABLE dbo.Deposits (
+    Id              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Deposits PRIMARY KEY,
+    RegistrationId  INT            NOT NULL CONSTRAINT FK_Deposits_RoomRegistrations REFERENCES dbo.RoomRegistrations(RegistrationId),
+    StudentId       INT            NOT NULL CONSTRAINT FK_Deposits_Students REFERENCES dbo.Students(StudentId),
+    StudentCode     NVARCHAR(20)   NULL,
+    StudentName     NVARCHAR(100)  NULL,
+    RoomNumber      NVARCHAR(20)   NULL,
+    Amount          DECIMAL(18,0)  NOT NULL CONSTRAINT CK_Deposits_Amount CHECK (Amount > 0),
+    CollectedDate   DATETIME2      NOT NULL,
+    PaymentMethod   NVARCHAR(50)   NULL,
+    CollectedBy     NVARCHAR(100)  NULL,
+    Status          NVARCHAR(30)   NOT NULL,
+    RefundedDate    DATETIME2      NULL,
+    RefundAmount    DECIMAL(18,0)  NULL,
+    DeductionAmount DECIMAL(18,0)  NULL,
+    DeductionReason NVARCHAR(500)  NULL,
+    RefundedBy      NVARCHAR(100)  NULL,
+    Note            NVARCHAR(500)  NULL,
+    CONSTRAINT CK_Deposits_Refund CHECK (ISNULL(RefundAmount, 0) >= 0 AND ISNULL(DeductionAmount, 0) >= 0
+                                         AND ISNULL(RefundAmount, 0) + ISNULL(DeductionAmount, 0) <= Amount)
+);",
+// Moi hop dong chi co 1 khoan coc con hieu luc
+@"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Deposits_Registration_Active')
+CREATE UNIQUE INDEX UX_Deposits_Registration_Active ON dbo.Deposits(RegistrationId) WHERE Status <> N'Đã hủy';",
+@"IF OBJECT_ID(N'dbo.UtilityPrices', N'U') IS NULL
+CREATE TABLE dbo.UtilityPrices (
+    Id             INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_UtilityPrices PRIMARY KEY,
+    EffectiveFrom  DATE           NOT NULL CONSTRAINT UQ_UtilityPrices_EffectiveFrom UNIQUE
+                                  CONSTRAINT CK_UtilityPrices_FirstDay CHECK (DAY(EffectiveFrom) = 1),
+    ElectricPrice  DECIMAL(18,0)  NOT NULL CONSTRAINT CK_UtilityPrices_Electric CHECK (ElectricPrice > 0),
+    WaterPrice     DECIMAL(18,0)  NOT NULL CONSTRAINT CK_UtilityPrices_Water CHECK (WaterPrice > 0),
+    Note           NVARCHAR(200)  NULL,
+    CreatedBy      NVARCHAR(100)  NULL,
+    CreatedAt      DATETIME2      NOT NULL
+);",
+@"IF NOT EXISTS (SELECT 1 FROM dbo.UtilityPrices)
+INSERT INTO dbo.UtilityPrices (EffectiveFrom, ElectricPrice, WaterPrice, Note, CreatedBy, CreatedAt)
+VALUES ('2000-01-01', 3500, 15000, N'Đơn giá ban đầu', N'Hệ thống', SYSDATETIME());",
+@"IF COL_LENGTH('dbo.RoomFeePayments', 'CollectedBy') IS NULL
+ALTER TABLE dbo.RoomFeePayments ADD CollectedBy NVARCHAR(100) NULL;",
+@"IF COL_LENGTH('dbo.CashFlowTransactions', 'CreatedBy') IS NULL
+ALTER TABLE dbo.CashFlowTransactions ADD
+    CreatedBy        NVARCHAR(100) NULL,
+    RoomFeePaymentId INT NULL CONSTRAINT FK_CashFlowTransactions_RoomFeePayments REFERENCES dbo.RoomFeePayments(Id),
+    UtilityBillId    INT NULL CONSTRAINT FK_CashFlowTransactions_UtilityBills REFERENCES dbo.UtilityBills(BillId),
+    DepositId        INT NULL CONSTRAINT FK_CashFlowTransactions_Deposits REFERENCES dbo.Deposits(Id),
+    IsVoided         BIT NOT NULL CONSTRAINT DF_CashFlowTransactions_IsVoided DEFAULT 0,
+    VoidedAt         DATETIME2 NULL,
+    VoidedBy         NVARCHAR(100) NULL,
+    VoidReason       NVARCHAR(500) NULL;",
+@"IF COL_LENGTH('dbo.UtilityBills', 'ElectricUnitPrice') IS NULL
+ALTER TABLE dbo.UtilityBills ADD
+    ElectricUnitPrice DECIMAL(18,0) NULL,
+    WaterUnitPrice    DECIMAL(18,0) NULL,
+    PaidDate          DATETIME2 NULL;",
+// Hoa don cu: luu lai don gia da ap dung (gia mac dinh truoc day)
+@"UPDATE dbo.UtilityBills SET ElectricUnitPrice = 3500, WaterUnitPrice = 15000
+WHERE ElectricUnitPrice IS NULL OR WaterUnitPrice IS NULL;",
+// Hoa don da thu truoc khi co so quy -> bo sung but toan, ngay thu uoc tinh = cuoi thang cua ky hoa don
+@"INSERT INTO dbo.CashFlowTransactions (TransactionDate, Type, Category, Amount, RelatedPerson, RoomNumber, Description, PaymentMethod, CreatedBy, UtilityBillId, IsVoided)
+SELECT ISNULL(b.PaidDate, EOMONTH(DATEFROMPARTS(b.BillingYear, b.BillingMonth, 1))), N'Thu', N'Tiền điện nước', b.TotalAmount,
+       N'Phòng ' + r.RoomNumber, r.RoomNumber,
+       N'Thu tiền điện nước tháng ' + CAST(b.BillingMonth AS NVARCHAR(2)) + N'/' + CAST(b.BillingYear AS NVARCHAR(4))
+         + N' phòng ' + r.RoomNumber + N' (bổ sung tự động, ngày thu ước tính)',
+       NULL, N'Hệ thống', b.BillId, 0
+FROM dbo.UtilityBills b JOIN dbo.Rooms r ON r.RoomId = b.RoomId
+WHERE b.IsPaid = 1 AND b.TotalAmount > 0
+  AND NOT EXISTS (SELECT 1 FROM dbo.CashFlowTransactions t WHERE t.UtilityBillId = b.BillId);"
+        };
+
         public static void EnsureInitialized(string appDataPath)
         {
             if (_initialized) return;
@@ -88,6 +163,10 @@ CREATE TABLE dbo.RoomFeePayments (
                 using (var ext = new DormExtContext())
                 {
                     ext.Database.ExecuteSqlCommand(SchemaSql);
+                    foreach (string sql in FinanceUpgradeSql)
+                    {
+                        ext.Database.ExecuteSqlCommand(sql);
+                    }
                 }
                 ImportJsonData(appDataPath);
 

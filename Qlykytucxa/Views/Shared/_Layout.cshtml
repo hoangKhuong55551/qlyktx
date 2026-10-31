@@ -353,9 +353,27 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="@Url.Action("Debts", "Finance")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "Debts" ? "active" : "")">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span class="nav-text">Công nợ quá hạn</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Deposits", "Finance")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "Deposits" ? "active" : "")">
+                            <i class="bi bi-safe"></i>
+                            <span class="nav-text">Tiền đặt cọc</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="@Url.Action("Index", "UtilityBills")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "UtilityBills" ? "active" : "")">
                             <i class="bi bi-receipt-cutoff"></i>
                             <span class="nav-text">Hóa đơn Điện Nước</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("UtilityPrices", "Finance")" class="nav-link-custom @(ViewContext.RouteData.Values["action"].ToString() == "UtilityPrices" ? "active" : "")">
+                            <i class="bi bi-lightning-charge"></i>
+                            <span class="nav-text">Bảng giá Điện Nước</span>
                         </a>
                     </li>
 

@@ -3,8 +3,10 @@
     Layout = null;
     int electricUsed = Model.NewElectricIndex - Model.OldElectricIndex;
     int waterUsed = Model.NewWaterIndex - Model.OldWaterIndex;
-    decimal electricCost = electricUsed * Qlykytucxa.Models.DormConstants.ElectricPrice;
-    decimal waterCost = waterUsed * Qlykytucxa.Models.DormConstants.WaterPrice;
+    decimal electricUnitPrice = Model.ElectricUnitPrice ?? Qlykytucxa.Models.DormConstants.ElectricPrice;
+    decimal waterUnitPrice = Model.WaterUnitPrice ?? Qlykytucxa.Models.DormConstants.WaterPrice;
+    decimal electricCost = electricUsed * electricUnitPrice;
+    decimal waterCost = waterUsed * waterUnitPrice;
     var occupants = ViewBag.Occupants as List<string> ?? new List<string>();
 
     string qrInfo = $"TIEN DIEN NUOC P{Model.Rooms.RoomNumber} T{Model.BillingMonth}_{Model.BillingYear}";
@@ -212,7 +214,7 @@
                         <td class="text-center">@Model.OldElectricIndex</td>
                         <td class="text-center">@Model.NewElectricIndex</td>
                         <td class="text-center fw-bold">@electricUsed kWh</td>
-                        <td class="text-end">@Qlykytucxa.Models.DormConstants.ElectricPrice.ToString("N0") đ</td>
+                        <td class="text-end">@electricUnitPrice.ToString("N0") đ</td>
                         <td class="text-end fw-bold">@electricCost.ToString("N0") đ</td>
                     </tr>
                     <tr>
@@ -224,7 +226,7 @@
                         <td class="text-center">@Model.OldWaterIndex</td>
                         <td class="text-center">@Model.NewWaterIndex</td>
                         <td class="text-center fw-bold">@waterUsed m&sup3;</td>
-                        <td class="text-end">@Qlykytucxa.Models.DormConstants.WaterPrice.ToString("N0") đ</td>
+                        <td class="text-end">@waterUnitPrice.ToString("N0") đ</td>
                         <td class="text-end fw-bold">@waterCost.ToString("N0") đ</td>
                     </tr>
                     <tr class="table-light">

@@ -1,0 +1,106 @@
+﻿@model List<Qlykytucxa.Models.OverdueItem>
+@{
+    ViewBag.Title = "Công nợ quá hạn";
+    var roomFees = Model.Where(i => i.Kind == Qlykytucxa.Models.DormConstants.KhoanTienPhong).ToList();
+    var utilities = Model.Where(i => i.Kind == Qlykytucxa.Models.DormConstants.KhoanDienNuoc).ToList();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Công nợ quá hạn
+        </h4>
+        <p class="text-muted mb-0 small">
+            Tiền phòng quá hạn nộp và hóa đơn điện nước quá hạn (hạn nộp điện nước: ngày 15 tháng kế tiếp kỳ hóa đơn)
+        </p>
+    </div>
+    <a href="@Url.Action("Index", "Finance")" class="btn btn-outline-secondary px-3 shadow-sm">
+        <i class="bi bi-wallet2 me-1"></i> Báo cáo Thu Chi
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Tổng quá hạn</div>
+            <div class="fs-3 fw-bold text-danger">@Model.Sum(i => i.Amount).ToString("N0") đ</div>
+            <div class="small text-muted">@Model.Count khoản</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Tiền phòng quá hạn</div>
+            <div class="fs-3 fw-bold">@roomFees.Sum(i => i.Amount).ToString("N0") đ</div>
+            <div class="small text-muted">@roomFees.Count khoản / @roomFees.Select(i => i.Payer).Distinct().Count() sinh viên</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Điện nước quá hạn</div>
+            <div class="fs-3 fw-bold">@utilities.Sum(i => i.Amount).ToString("N0") đ</div>
+            <div class="small text-muted">@utilities.Count hóa đơn / @utilities.Select(i => i.RoomNumber).Distinct().Count() phòng</div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm">
+    <div class="card-body p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Khoản</th>
+                        <th>Người / Phòng phải nộp</th>
+                        <th>Phòng</th>
+                        <th>Kỳ</th>
+                        <th>Số tiền</th>
+                        <th>Hạn nộp</th>
+                        <th>Quá hạn</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td><span class="badge @(item.Kind == Qlykytucxa.Models.DormConstants.KhoanTienPhong ? "bg-primary" : "bg-warning text-dark")">@item.Kind</span></td>
+                                <td class="fw-semibold">@item.Payer</td>
+                                <td><span class="badge bg-light text-dark border">@item.RoomNumber</span></td>
+                                <td>@item.Period</td>
+                                <td class="fw-bold text-danger">@item.Amount.ToString("N0") đ</td>
+                                <td>@item.DueDate.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @(item.DaysOverdue > 30 ? "bg-danger" : "bg-danger bg-opacity-75")">@item.DaysOverdue ngày</span></td>
+                                <td class="text-end">
+                                    @if (item.Kind == Qlykytucxa.Models.DormConstants.KhoanTienPhong)
+                                    {
+                                        <a href="@Url.Action("PrintRoomReceipt", "Finance", new { id = item.SourceId })" class="btn btn-sm btn-outline-dark" target="_blank" title="In phiếu báo / VietQR"><i class="bi bi-printer"></i></a>
+                                        <a href="@Url.Action("RoomFees", "Finance", new { searchString = item.SearchKey, statusFilter = "unpaid" })" class="btn btn-sm btn-success">Thu tiền</a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("PrintInvoice", "UtilityBills", new { id = item.SourceId })" class="btn btn-sm btn-outline-dark" target="_blank" title="In hóa đơn / VietQR"><i class="bi bi-printer"></i></a>
+                                        <a href="@Url.Action("Index", "UtilityBills", new { searchString = item.SearchKey, paymentStatus = "unpaid" })" class="btn btn-sm btn-success">Thu tiền</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-emoji-smile fs-2 d-block mb-2 text-success"></i>
+                                Không có khoản nào quá hạn.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>Hệ thống chưa tự tính phí trễ hạn (chưa có quy định mức phạt).
+        </p>
+    </div>
+</div>

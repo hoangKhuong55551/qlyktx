@@ -207,7 +207,7 @@
             <div class="col-6">
                 <div class="fw-bold">NGƯỜI LẬP PHIẾU THU</div>
                 <div class="small fst-italic text-muted mb-5">(Ký, họ tên và đóng dấu)</div>
-                <div class="fw-bold">Ban Quản lý KTX</div>
+                <div class="fw-bold">@(Model.IsPaid && !string.IsNullOrEmpty(Model.CollectedBy) ? Model.CollectedBy : "Ban Quản lý KTX")</div>
             </div>
         </div>
     </div>

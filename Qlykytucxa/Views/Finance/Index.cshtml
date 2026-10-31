@@ -41,6 +41,15 @@
         <a href="@Url.Action("RoomFees", "Finance")" class="btn btn-outline-primary px-3 shadow-sm">
             <i class="bi bi-cash-coin me-1"></i> Quản lý Thu Tiền Phòng
         </a>
+        <a href="@Url.Action("Debts", "Finance")" class="btn btn-outline-warning text-dark px-3 shadow-sm">
+            <i class="bi bi-exclamation-triangle me-1"></i> Công nợ quá hạn
+        </a>
+        <a href="@Url.Action("Deposits", "Finance")" class="btn btn-outline-secondary px-3 shadow-sm">
+            <i class="bi bi-safe me-1"></i> Tiền đặt cọc
+        </a>
+        <a href="@Url.Action("UtilityPrices", "Finance")" class="btn btn-outline-secondary px-3 shadow-sm">
+            <i class="bi bi-lightning-charge me-1"></i> Bảng giá điện nước
+        </a>
         <button type="button" class="btn btn-outline-danger px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
             <i class="bi bi-dash-circle me-1"></i> Ghi nhận Khoản Chi
         </button>
@@ -59,6 +68,10 @@
             <div class="fs-2 fw-bold mb-1">@Model.TotalRevenue.ToString("N0") đ</div>
             <div class="small text-white-50">
                 Tiền phòng: @Model.RoomFeeRevenue.ToString("N0") đ &bull; ĐN: @Model.UtilityRevenue.ToString("N0") đ
+                @if (Model.DepositDeductionRevenue > 0)
+                {
+                    <text>&bull; Khấu trừ cọc: @Model.DepositDeductionRevenue.ToString("N0") đ</text>
+                }
             </div>
             <i class="bi bi-graph-up-arrow icon-bg"></i>
         </div>
@@ -92,6 +105,34 @@
             <div class="small text-white-50">Tiền phòng + Tiền điện nước tồn đọng</div>
             <i class="bi bi-clock-history icon-bg"></i>
         </div>
+    </div>
+</div>
+
+<!-- 2b. Chỉ số phụ: Công nợ quá hạn & Tiền cọc đang giữ -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <a href="@Url.Action("Debts", "Finance")" class="text-decoration-none">
+            <div class="card border-0 rounded-4 shadow-sm p-3 d-flex flex-row align-items-center gap-3 @(Model.OverdueCount > 0 ? "border-start border-4 border-danger" : "")">
+                <i class="bi bi-exclamation-octagon-fill fs-2 @(Model.OverdueCount > 0 ? "text-danger" : "text-success")"></i>
+                <div>
+                    <div class="small text-muted text-uppercase fw-bold">Công nợ đã quá hạn</div>
+                    <div class="fs-4 fw-bold text-dark">@Model.OverdueAmount.ToString("N0") đ</div>
+                    <div class="small text-muted">@Model.OverdueCount khoản tiền phòng / điện nước quá hạn nộp</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="@Url.Action("Deposits", "Finance")" class="text-decoration-none">
+            <div class="card border-0 rounded-4 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+                <i class="bi bi-safe2-fill fs-2 text-secondary"></i>
+                <div>
+                    <div class="small text-muted text-uppercase fw-bold">Tiền cọc đang giữ hộ sinh viên</div>
+                    <div class="fs-4 fw-bold text-dark">@Model.DepositsHeld.ToString("N0") đ</div>
+                    <div class="small text-muted">Không tính vào doanh thu; phải hoàn khi sinh viên rời KTX</div>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -177,6 +218,8 @@
                         <th>Phòng</th>
                         <th>Số tiền (VNĐ)</th>
                         <th>Phương thức</th>
+                        <th>Người ghi</th>
+                        <th class="text-end"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,7 +227,7 @@
                     {
                         foreach (var tx in Model.RecentTransactions)
                         {
-                            <tr>
+                            <tr class="@(tx.IsVoided ? "text-decoration-line-through opacity-50" : "")" title="@(tx.IsVoided ? "Đã hủy bởi " + tx.VoidedBy + " lúc " + (tx.VoidedAt.HasValue ? tx.VoidedAt.Value.ToString("dd/MM/yyyy HH:mm") : "") + ": " + tx.VoidReason : "")">
                                 <td class="fw-bold text-muted">GD#@tx.Id.ToString("D4")</td>
                                 <td>@tx.TransactionDate.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td>
@@ -211,13 +254,27 @@
                                     @(tx.Type == "Thu" ? "+" : "-")@tx.Amount.ToString("N0") đ
                                 </td>
                                 <td><span class="badge bg-light text-secondary border">@tx.PaymentMethod</span></td>
+                                <td class="small">@tx.CreatedBy</td>
+                                <td class="text-end">
+                                    @if (tx.IsVoided)
+                                    {
+                                        <span class="badge bg-secondary">Đã hủy</span>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Hủy phiếu nhập sai"
+                                                data-bs-toggle="modal" data-bs-target="#voidModal" data-tx-id="@tx.Id" data-tx-label="GD#@tx.Id.ToString("D4") - @tx.Category - @tx.Amount.ToString("N0") đ">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    }
+                                </td>
                             </tr>
                         }
                     }
                     else
                     {
                         <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
+                            <td colspan="10" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox fs-3 d-block mb-1 opacity-50"></i>
                                 Chưa có giao dịch nào phù hợp với bộ lọc.
                             </td>
@@ -225,6 +282,36 @@
                     }
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Hủy Phiếu -->
+<div class="modal fade" id="voidModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            @using (Html.BeginForm("VoidTransaction", "Finance", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="voidTxId" />
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-octagon me-2"></i>Hủy phiếu trong sổ quỹ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Phiếu: <strong id="voidTxLabel"></strong></p>
+                    <div class="alert alert-warning py-2 small">
+                        Phiếu bị hủy vẫn được lưu lại để đối chiếu nhưng không tính vào báo cáo.
+                        Nếu là phiếu thu tiền phòng / điện nước / tiền cọc, khoản đó sẽ trở về trạng thái <strong>chưa thu</strong>.
+                    </div>
+                    <label class="form-label fw-bold">Lý do hủy:</label>
+                    <textarea name="reason" class="form-control" rows="2" required placeholder="VD: Ghi nhầm số tiền, thu nhầm sinh viên..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận hủy phiếu</button>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -288,6 +375,12 @@
 
 @section scripts {
     <script>
+        // Truyền mã phiếu vào modal hủy phiếu
+        document.getElementById('voidModal').addEventListener('show.bs.modal', function (e) {
+            document.getElementById('voidTxId').value = e.relatedTarget.getAttribute('data-tx-id');
+            document.getElementById('voidTxLabel').textContent = e.relatedTarget.getAttribute('data-tx-label');
+        });
+
         // 1. Biểu đồ Cột Nhóm: Thu - Chi - Lợi nhuận
         const cfCtx = document.getElementById('cashflowChart').getContext('2d');
         const cfLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(chartLabels));

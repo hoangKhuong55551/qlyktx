@@ -153,6 +153,7 @@
     <Compile Include="Services\RoomFeeService.cs" />
     <Compile Include="Services\OccupancyService.cs" />
     <Compile Include="Services\CsvHelper.cs" />
+    <Compile Include="Services\FinanceService.cs" />
     <Compile Include="Models\Model1.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -257,6 +258,9 @@
     <Content Include="Views\Finance\Index.cshtml" />
     <Content Include="Views\Finance\RoomFees.cshtml" />
     <Content Include="Views\Finance\PrintRoomReceipt.cshtml" />
+    <Content Include="Views\Finance\Debts.cshtml" />
+    <Content Include="Views\Finance\Deposits.cshtml" />
+    <Content Include="Views\Finance\UtilityPrices.cshtml" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />

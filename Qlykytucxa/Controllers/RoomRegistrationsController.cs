@@ -384,9 +384,16 @@ namespace Qlykytucxa.Controllers
                 shared.Database.UseTransaction(tx.UnderlyingTransaction);
 
                 var fees = shared.RoomFeePayments.Where(f => f.RegistrationId == id).ToList();
-                if (fees.Any(f => f.IsPaid))
+                var feeIds = fees.Select(f => f.Id).ToList();
+                if (fees.Any(f => f.IsPaid)
+                    || shared.CashFlowTransactions.Any(t => t.RoomFeePaymentId != null && feeIds.Contains(t.RoomFeePaymentId.Value)))
                 {
                     TempData["Error"] = "Không thể xóa hợp đồng đã có phiếu thu tiền phòng. Hãy dùng chức năng Trả phòng / Thanh lý.";
+                    return RedirectToAction("Index");
+                }
+                if (shared.Deposits.Any(d => d.RegistrationId == id))
+                {
+                    TempData["Error"] = "Không thể xóa hợp đồng đã có lịch sử đặt cọc. Hãy dùng chức năng Trả phòng / Thanh lý.";
                     return RedirectToAction("Index");
                 }
                 shared.RoomFeePayments.RemoveRange(fees);

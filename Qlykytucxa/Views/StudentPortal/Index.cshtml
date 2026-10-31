@@ -6,6 +6,9 @@
     var bills = ViewBag.Bills as List<Qlykytucxa.Models.UtilityBills> ?? new List<Qlykytucxa.Models.UtilityBills>();
     var incidents = ViewBag.Incidents as List<Qlykytucxa.Models.IncidentRequest> ?? new List<Qlykytucxa.Models.IncidentRequest>();
     var announcements = ViewBag.Announcements as List<Qlykytucxa.Models.Announcement> ?? new List<Qlykytucxa.Models.Announcement>();
+    var roomFees = ViewBag.RoomFees as List<Qlykytucxa.Models.RoomFeePayment> ?? new List<Qlykytucxa.Models.RoomFeePayment>();
+    var deposit = ViewBag.Deposit as Qlykytucxa.Models.Deposit;
+    decimal feeDebt = roomFees.Where(f => !f.IsPaid).Sum(f => f.Amount);
 
     string buildingName = (reg != null && reg.Rooms != null && !string.IsNullOrEmpty(reg.Rooms.RoomNumber) && char.IsLetter(reg.Rooms.RoomNumber[0])) 
         ? ("Tòa " + reg.Rooms.RoomNumber[0]) 
@@ -138,7 +141,11 @@
                                             }
                                             else
                                             {
+                                                var billDue = Qlykytucxa.Services.FinanceService.UtilityDueDate(b.BillingYear, b.BillingMonth);
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">Chưa thanh toán</span>
+                                                <div class="small @(billDue < DateTime.Today ? "text-danger fw-bold" : "text-muted")">
+                                                    Hạn: @billDue.ToString("dd/MM/yyyy")@(billDue < DateTime.Today ? " (quá hạn)" : "")
+                                                </div>
                                             }
                                         </td>
                                         <td class="text-end">
@@ -155,6 +162,97 @@
                 else
                 {
                     <p class="text-muted text-center py-3 mb-0">Phòng chưa phát sinh hóa đơn nào.</p>
+                }
+            </div>
+        </div>
+        <!-- 2b. Tiền phòng & Tiền cọc của sinh viên -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-cash-coin text-primary me-2"></i>Tiền phòng của bạn
+                    </h5>
+                    @if (feeDebt > 0)
+                    {
+                        <span class="badge bg-danger">Còn nợ: @feeDebt.ToString("N0") đ</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Không có công nợ</span>
+                    }
+                </div>
+
+                <div class="bg-light border rounded-3 p-2 px-3 mb-3 small">
+                    <i class="bi bi-safe me-1"></i><strong>Tiền đặt cọc:</strong>
+                    @if (deposit == null)
+                    {
+                        <span class="text-muted">Chưa nộp cọc</span>
+                    }
+                    else if (deposit.Status == Qlykytucxa.Models.DormConstants.CocDangGiu)
+                    {
+                        <span>@deposit.Amount.ToString("N0") đ — BQL đang giữ (nộp ngày @deposit.CollectedDate.ToString("dd/MM/yyyy"))</span>
+                    }
+                    else
+                    {
+                        <span>Đã hoàn @((deposit.RefundAmount ?? 0).ToString("N0")) đ ngày @(deposit.RefundedDate.HasValue ? deposit.RefundedDate.Value.ToString("dd/MM/yyyy") : "")
+                            @if ((deposit.DeductionAmount ?? 0) > 0)
+                            {
+                                <text>(khấu trừ @deposit.DeductionAmount.Value.ToString("N0") đ: @deposit.DeductionReason)</text>
+                            }
+                        </span>
+                    }
+                </div>
+
+                @if (roomFees.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kỳ thu</th>
+                                    <th>Phòng</th>
+                                    <th>Số tiền</th>
+                                    <th>Hạn nộp</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Phiếu thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var f in roomFees)
+                                {
+                                    <tr class="@(f.IsOverdue ? "table-danger" : "")">
+                                        <td class="fw-bold">@f.SemesterPeriod</td>
+                                        <td>@f.RoomNumber</td>
+                                        <td class="fw-bold text-danger">@f.Amount.ToString("N0") đ</td>
+                                        <td>@f.DueDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @if (f.IsPaid)
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Đã đóng @(f.PaidDate.HasValue ? f.PaidDate.Value.ToString("dd/MM") : "")</span>
+                                            }
+                                            else if (f.IsOverdue)
+                                            {
+                                                <span class="badge bg-danger">Quá hạn @f.DaysOverdue ngày</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">Chưa đóng</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="@Url.Action("PrintRoomReceipt", "Finance", new { id = f.Id })" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi @(f.IsPaid ? "bi-printer" : "bi-qr-code") me-1"></i>@(f.IsPaid ? "Xem phiếu" : "Quét mã")
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-3 mb-0">Chưa phát sinh khoản tiền phòng nào.</p>
                 }
             </div>
         </div>

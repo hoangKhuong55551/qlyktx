@@ -24,8 +24,16 @@ namespace Qlykytucxa.Models
         public const string GiaoDichChi = "Chi";
         public const string KhoanTienPhong = "Tiền phòng";
         public const string KhoanDienNuoc = "Tiền điện nước";
+        public const string KhoanTienCoc = "Tiền đặt cọc";
+        public const string KhoanHoanCoc = "Hoàn tiền cọc";
 
-        // Don gia dien/nuoc (VND) - chinh tai day khi can thay doi
+        // Trang thai tien dat coc
+        public const string CocDangGiu = "Đang giữ";
+        public const string CocDaHoan = "Đã hoàn";
+        public const string CocDaHuy = "Đã hủy";
+
+        // Don gia dien/nuoc mac dinh (VND) - chi dung de khoi tao bang gia UtilityPrices.
+        // Doi gia: vao Tai chinh > Bang gia dien nuoc (khong sua o day).
         public const decimal ElectricPrice = 3500m;   // d/kWh
         public const decimal WaterPrice = 15000m;     // d/m3
     }

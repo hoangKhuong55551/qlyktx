@@ -52,6 +52,9 @@
           <Property Name="NewWaterIndex" Type="int" Nullable="false" />
           <Property Name="TotalAmount" Type="decimal" Precision="18" Scale="0" Nullable="false" />
           <Property Name="IsPaid" Type="bit" Nullable="false" />
+          <Property Name="ElectricUnitPrice" Type="decimal" Precision="18" Scale="0" />
+          <Property Name="WaterUnitPrice" Type="decimal" Precision="18" Scale="0" />
+          <Property Name="PaidDate" Type="datetime2" Precision="7" />
         </EntityType>
         <Association Name="FK__RoomRegis__RoomI__52593CB8">
           <End Role="Rooms" Type="Self.Rooms" Multiplicity="1" />
@@ -164,6 +167,9 @@
           <Property Name="NewWaterIndex" Type="Int32" Nullable="false" />
           <Property Name="TotalAmount" Type="Decimal" Precision="18" Scale="0" Nullable="false" />
           <Property Name="IsPaid" Type="Boolean" Nullable="false" />
+          <Property Name="ElectricUnitPrice" Type="Decimal" Precision="18" Scale="0" />
+          <Property Name="WaterUnitPrice" Type="Decimal" Precision="18" Scale="0" />
+          <Property Name="PaidDate" Type="DateTime" Precision="7" />
           <NavigationProperty Name="Rooms" Relationship="Self.FK__UtilityBi__RoomI__571DF1D5" FromRole="UtilityBills" ToRole="Rooms" />
         </EntityType>
         <Association Name="FK__RoomRegis__RoomI__52593CB8">
@@ -275,6 +281,9 @@
                 <ScalarProperty Name="NewWaterIndex" ColumnName="NewWaterIndex" />
                 <ScalarProperty Name="TotalAmount" ColumnName="TotalAmount" />
                 <ScalarProperty Name="IsPaid" ColumnName="IsPaid" />
+                <ScalarProperty Name="ElectricUnitPrice" ColumnName="ElectricUnitPrice" />
+                <ScalarProperty Name="WaterUnitPrice" ColumnName="WaterUnitPrice" />
+                <ScalarProperty Name="PaidDate" ColumnName="PaidDate" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
