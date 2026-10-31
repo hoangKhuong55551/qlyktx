@@ -94,11 +94,12 @@ namespace Qlykytucxa.Controllers
                 return RedirectToAction("Index", "StudentPortal");
             }
 
-            ModelState.AddModelError("", "Tên đăng nhập hoặc mật khẩu không chính xác! (Gợi ý: admin/123456, staff/123456, hoặc mã SV: SV001/123456)");
+            ModelState.AddModelError("", "Tên đăng nhập hoặc mật khẩu không chính xác!");
             return View(model);
         }
 
         // GET/POST: /Account/Logout
+        [AllowAnonymous]
         public ActionResult Logout()
         {
             Session.Clear();

@@ -1,0 +1,32 @@
+[
+  {
+    "Id": 1,
+    "Title": "Thông báo: Tạm ngừng cấp nước phục vụ súc rửa bể chứa tòa A",
+    "Category": "Bảo trì",
+    "Content": "Ban Quản lý Ký túc xá thông báo lịch súc rửa, khử khuẩn định kỳ bể nước sinh hoạt tòa A. Nước sinh hoạt sẽ tạm ngưng từ 08h00 đến 11h30 ngày 30/10. Đề nghị các phòng chủ động tích trữ nước dùng.",
+    "Priority": "Khẩn cấp",
+    "CreatedAt": "2026-10-30T08:06:43.6289151+07:00",
+    "AuthorName": "Ban Quản lý KTX",
+    "IsActive": true
+  },
+  {
+    "Id": 2,
+    "Title": "Nhắc nhở: Hạn chót thanh toán hóa đơn tiền điện nước tháng này",
+    "Category": "Điện nước",
+    "Content": "Hạn chót thanh toán tiền điện nước tháng này là ngày 15 hàng tháng. Đề nghị đại diện các phòng kiểm tra hóa đơn và quét mã VietQR tự động để thanh toán đúng hạn tránh phát sinh tiền phạt chậm nộp.",
+    "Priority": "Quan trọng",
+    "CreatedAt": "2026-10-28T08:06:43.6289151+07:00",
+    "AuthorName": "Bộ phận Tài chính KTX",
+    "IsActive": true
+  },
+  {
+    "Id": 3,
+    "Title": "Kế hoạch tổng vệ sinh và chấm điểm phòng ở sạch đẹp tháng 10",
+    "Category": "Vệ sinh",
+    "Content": "Vào sáng thứ Bảy tuần này, Ban Quản lý sẽ tiến hành kiểm tra và chấm điểm vệ sinh các phòng ở toàn bộ các tòa nhà KTX. Các phòng đạt điểm xuất sắc sẽ được biểu dương và cộng điểm rèn luyện.",
+    "Priority": "Thông thường",
+    "CreatedAt": "2026-10-26T08:06:43.6289151+07:00",
+    "AuthorName": "Đoàn Thanh niên KTX",
+    "IsActive": true
+  }
+]

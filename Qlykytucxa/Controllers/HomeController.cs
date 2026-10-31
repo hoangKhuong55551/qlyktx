@@ -4,10 +4,12 @@ using System.Data.Entity;
 using System.Linq;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class HomeController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();

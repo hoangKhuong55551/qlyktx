@@ -1,7 +1,7 @@
 ﻿@{
     var userSession = Session["User"] as Qlykytucxa.Models.UserSession;
-    string currentRole = userSession != null ? userSession.Role : (Session["Role"] as string ?? "Admin");
-    string currentName = userSession != null ? userSession.FullName : (Session["FullName"] as string ?? "Quản trị viên");
+    string currentRole = userSession != null ? userSession.Role : (Session["Role"] as string ?? "");
+    string currentName = userSession != null ? userSession.FullName : (Session["FullName"] as string ?? "");
     string avatarText = currentRole == "Student" ? "SV" : (currentRole == "Staff" ? "KT" : "AD");
 }
 <!DOCTYPE html>
@@ -303,7 +303,7 @@
                         </a>
                     </li>
                 }
-                else
+                else if (currentRole == "Admin")
                 {
                     <li class="sidebar-heading">Bảng điều khiển</li>
                     <li class="nav-item">

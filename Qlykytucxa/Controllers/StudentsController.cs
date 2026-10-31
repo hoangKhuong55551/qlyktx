@@ -6,10 +6,12 @@ using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class StudentsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();

@@ -5,6 +5,8 @@
     string searchString = ViewBag.SearchString as string ?? "";
     string statusFilter = ViewBag.StatusFilter as string ?? "";
     string categoryFilter = ViewBag.CategoryFilter as string ?? "";
+    var currentUser = Qlykytucxa.Models.UserSession.FromSession(Session);
+    bool canDelete = currentUser != null && currentUser.Role == Qlykytucxa.Models.UserRoles.Admin;
 }
 
 <div class="card shadow-sm border-0 rounded-4">
@@ -137,13 +139,16 @@
                                         <a href="@Url.Action("Edit", new { id = item.Id })" class="btn btn-outline-primary" title="Cập nhật tiến độ & Phân công">
                                             <i class="bi bi-pencil-square"></i> Xử lý
                                         </a>
-                                        @using (Html.BeginForm("Delete", "Incidents", new { id = item.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                        @if (canDelete)
+                                        {
+                                        using (Html.BeginForm("Delete", "Incidents", new { id = item.Id }, FormMethod.Post, new { style = "display:inline;" }))
                                         {
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa"
                                                     onclick="return confirm('Xác nhận xóa bản ghi sự cố này?');">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                        }
                                         }
                                     </div>
                                 </td>

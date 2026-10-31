@@ -7,10 +7,12 @@ using System.Net;
 using System.Text;
 using System.Web;
 using System.Web.Mvc;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class UtilityBillsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
@@ -62,11 +64,20 @@ namespace Qlykytucxa.Controllers
         }
 
         // GET: UtilityBills/PrintInvoice/5 (Mẫu phiếu thu / Hóa đơn điện nước & VietQR)
+        // Sinh vien chi duoc xem hoa don cua phong minh da/dang o
+        [RoleAuthorize(UserRoles.Admin, UserRoles.Student)]
         public ActionResult PrintInvoice(int? id)
         {
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             UtilityBills bill = db.UtilityBills.Include(u => u.Rooms).FirstOrDefault(u => u.BillId == id);
             if (bill == null) return HttpNotFound();
+
+            var user = UserSession.FromSession(Session);
+            if (user.Role == UserRoles.Student
+                && !db.RoomRegistrations.Any(r => r.StudentId == user.StudentId && r.RoomId == bill.RoomId))
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.Forbidden);
+            }
 
             // Lấy danh sách sinh viên đang ở trong phòng này để hiển thị trên hóa đơn
             var occupants = db.RoomRegistrations.Include(r => r.Students)

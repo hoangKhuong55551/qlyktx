@@ -6,10 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class FinanceController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();

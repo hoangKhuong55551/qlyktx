@@ -4,10 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class AnnouncementsController : Controller
     {
         private static readonly object _fileLock = new object();
@@ -85,7 +87,8 @@ namespace Qlykytucxa.Controllers
             }
         }
 
-        // GET: Announcements
+        // GET: Announcements (Ky thuat vien duoc xem, chi Admin duoc dang/sua/xoa)
+        [RoleAuthorize(UserRoles.Admin, UserRoles.Staff)]
         public ActionResult Index(string categoryFilter)
         {
             var list = LoadAnnouncements();

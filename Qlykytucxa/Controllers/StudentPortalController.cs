@@ -5,33 +5,44 @@ using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Student, UserRoles.Admin)]
     public class StudentPortalController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
 
-        private Students GetCurrentStudent()
+        // Sinh vien: luon la chinh minh. Admin: xem thu cong SV cua sinh vien bat ky (mac dinh SV dau tien).
+        private Students GetCurrentStudent(int? previewStudentId = null)
         {
-            var sessionUser = Session["User"] as UserSession;
-            if (sessionUser != null && sessionUser.StudentId.HasValue)
+            var sessionUser = UserSession.FromSession(Session);
+            if (sessionUser.Role == UserRoles.Student)
             {
-                return db.Students.Find(sessionUser.StudentId.Value);
+                return sessionUser.StudentId.HasValue ? db.Students.Find(sessionUser.StudentId.Value) : null;
             }
-            // Mặc định sinh viên đầu tiên nếu chưa đăng nhập (hỗ trợ test nhanh)
-            return db.Students.FirstOrDefault();
+            return previewStudentId.HasValue
+                ? db.Students.Find(previewStudentId.Value)
+                : db.Students.OrderBy(s => s.StudentCode).FirstOrDefault();
         }
 
         // GET: /StudentPortal/Index
-        public ActionResult Index()
+        public ActionResult Index(int? studentId)
         {
-            var student = GetCurrentStudent();
+            var student = GetCurrentStudent(studentId);
             if (student == null)
             {
-                TempData["Error"] = "Vui lòng đăng nhập bằng tài khoản Sinh viên!";
-                return RedirectToAction("Login", "Account");
+                if (UserSession.FromSession(Session).Role == UserRoles.Student)
+                {
+                    // Ho so SV da bi xoa -> buoc dang nhap lai
+                    Session.Clear();
+                    TempData["Error"] = "Không tìm thấy hồ sơ sinh viên của bạn!";
+                    return RedirectToAction("Login", "Account");
+                }
+                TempData["Error"] = "Chưa có sinh viên nào trong hệ thống!";
+                return RedirectToAction("Index", "Home");
             }
 
             ViewBag.Student = student;
@@ -78,14 +89,20 @@ namespace Qlykytucxa.Controllers
             return View();
         }
 
+        private RoomRegistrations GetActiveRegistration(int studentId)
+        {
+            return db.RoomRegistrations.Include(r => r.Rooms)
+                .FirstOrDefault(r => r.StudentId == studentId && r.Status == DormConstants.StatusDangO);
+        }
+
         // GET: /StudentPortal/ReportIncident
+        [RoleAuthorize(UserRoles.Student)]
         public ActionResult ReportIncident()
         {
             var student = GetCurrentStudent();
             if (student == null) return RedirectToAction("Login", "Account");
 
-            var activeReg = db.RoomRegistrations.Include(r => r.Rooms)
-                .FirstOrDefault(r => r.StudentId == student.StudentId && (r.Status == "Đang ở" || r.Status == DormConstants.StatusDangO));
+            var activeReg = GetActiveRegistration(student.StudentId);
 
             if (activeReg == null)
             {
@@ -107,8 +124,27 @@ namespace Qlykytucxa.Controllers
         // POST: /StudentPortal/ReportIncident
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RoleAuthorize(UserRoles.Student)]
         public ActionResult ReportIncident(IncidentRequest model)
         {
+            // Phong va nguoi bao lay tu phia server, khong tin gia tri gui len tu form
+            var student = GetCurrentStudent();
+            if (student == null) return RedirectToAction("Login", "Account");
+            var activeReg = GetActiveRegistration(student.StudentId);
+            if (activeReg == null)
+            {
+                TempData["Error"] = "Bạn chưa được xếp vào phòng nào nên không thể gửi báo hỏng!";
+                return RedirectToAction("Index");
+            }
+            model.RoomId = activeReg.RoomId;
+            model.RoomNumber = activeReg.Rooms.RoomNumber;
+            model.ReporterName = student.FullName;
+            model.AssignedTo = "Chưa phân công";
+            model.Cost = 0;
+            model.ResolvedAt = null;
+            ModelState.Remove("RoomId");
+            ModelState.Remove("ReporterName");
+
             if (ModelState.IsValid)
             {
                 string appData = Server.MapPath("~/App_Data");

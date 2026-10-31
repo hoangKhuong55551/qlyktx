@@ -6,10 +6,12 @@ using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin)]
     public class RoomRegistrationsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
@@ -64,11 +66,19 @@ namespace Qlykytucxa.Controllers
         }
 
         // GET: RoomRegistrations/PrintContract/5 - Mẫu In Hợp đồng nội trú chuẩn A4
+        // Sinh vien chi duoc in hop dong cua chinh minh
+        [RoleAuthorize(UserRoles.Admin, UserRoles.Student)]
         public ActionResult PrintContract(int? id)
         {
             if (id == null) return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             RoomRegistrations contract = db.RoomRegistrations.Include(r => r.Rooms).Include(r => r.Students).FirstOrDefault(r => r.RegistrationId == id);
             if (contract == null) return HttpNotFound();
+
+            var user = UserSession.FromSession(Session);
+            if (user.Role == UserRoles.Student && contract.StudentId != user.StudentId)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.Forbidden);
+            }
             return View(contract);
         }
 

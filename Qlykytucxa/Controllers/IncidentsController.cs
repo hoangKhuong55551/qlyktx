@@ -4,10 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
 namespace Qlykytucxa.Controllers
 {
+    [RoleAuthorize(UserRoles.Admin, UserRoles.Staff)]
     public class IncidentsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
@@ -218,6 +220,7 @@ namespace Qlykytucxa.Controllers
 
         // POST: Incidents/Delete/5
         [HttpPost]
+        [RoleAuthorize(UserRoles.Admin)]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id)
         {

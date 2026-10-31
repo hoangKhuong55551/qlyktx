@@ -2,6 +2,8 @@
 @{
     ViewBag.Title = "Bảng tin & Thông báo KTX";
     string categoryFilter = ViewBag.CategoryFilter as string ?? "";
+    var currentUser = Qlykytucxa.Models.UserSession.FromSession(Session);
+    bool canManage = currentUser != null && currentUser.Role == Qlykytucxa.Models.UserRoles.Admin;
 }
 
 <div class="card shadow-sm border-0 rounded-4">
@@ -14,9 +16,12 @@
                 </h4>
                 <p class="text-muted mb-0 small">Đăng tải và quản lý các thông báo quan trọng gửi tới toàn thể sinh viên nội trú</p>
             </div>
-            <a href="@Url.Action("Create", "Announcements")" class="btn btn-primary px-3 shadow-sm">
-                <i class="bi bi-plus-circle me-1"></i> Đăng thông báo mới
-            </a>
+            @if (canManage)
+            {
+                <a href="@Url.Action("Create", "Announcements")" class="btn btn-primary px-3 shadow-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Đăng thông báo mới
+                </a>
+            }
         </div>
 
         <!-- Bộ lọc danh mục -->
@@ -55,6 +60,8 @@
                                         <i class="bi bi-clock me-1"></i>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm") &bull; Bởi <strong>@item.AuthorName</strong>
                                     </span>
                                 </div>
+                                @if (canManage)
+                                {
                                 <div class="d-flex gap-1">
                                     <a href="@Url.Action("Edit", "Announcements", new { id = item.Id })" class="btn btn-sm btn-outline-primary" title="Sửa">
                                         <i class="bi bi-pencil"></i>
@@ -67,6 +74,7 @@
                                         </button>
                                     }
                                 </div>
+                                }
                             </div>
                             <h5 class="fw-bold text-dark mb-2">@item.Title</h5>
                             <p class="text-secondary mb-0" style="white-space: pre-line; line-height: 1.6;">@item.Content</p>

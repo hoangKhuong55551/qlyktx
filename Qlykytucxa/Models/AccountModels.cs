@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Web;
 
 namespace Qlykytucxa.Models
 {
@@ -18,6 +19,14 @@ namespace Qlykytucxa.Models
         public bool RememberMe { get; set; }
     }
 
+    // Ten cac vai tro trong he thong
+    public static class UserRoles
+    {
+        public const string Admin = "Admin";
+        public const string Staff = "Staff";
+        public const string Student = "Student";
+    }
+
     public class UserSession
     {
         public string Username { get; set; }
@@ -26,5 +35,22 @@ namespace Qlykytucxa.Models
         public int? StudentId { get; set; }
         public int? RoomId { get; set; }
         public string RoomNumber { get; set; }
+
+        // Lay nguoi dung dang dang nhap (null neu chua dang nhap)
+        public static UserSession FromSession(HttpSessionStateBase session)
+        {
+            return session == null ? null : session["User"] as UserSession;
+        }
+
+        // Trang mac dinh cua tung vai tro sau khi dang nhap / khi bi tu choi quyen
+        public static object HomeRoute(string role)
+        {
+            switch (role)
+            {
+                case UserRoles.Student: return new { controller = "StudentPortal", action = "Index" };
+                case UserRoles.Staff: return new { controller = "Incidents", action = "Index" };
+                default: return new { controller = "Home", action = "Index" };
+            }
+        }
     }
 }
