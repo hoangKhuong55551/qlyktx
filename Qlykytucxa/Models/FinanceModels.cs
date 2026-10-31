@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Qlykytucxa.Models
 {
-    // Bản ghi thu tiền phòng của sinh viên
+    // Bản ghi thu tiền phòng của sinh viên (mỗi sinh viên một khoản / tháng)
     public class RoomFeePayment
     {
         public int Id { get; set; }
@@ -14,8 +14,10 @@ namespace Qlykytucxa.Models
         public string StudentName { get; set; }
         public int RoomId { get; set; }
         public string RoomNumber { get; set; }
+        public int FeeMonth { get; set; }
+        public int FeeYear { get; set; }
         public decimal Amount { get; set; }
-        public string SemesterPeriod { get; set; } // Ví dụ: "Học kỳ 1 (2026-2027)" hoặc "Tháng 10/2026"
+        public string SemesterPeriod { get; set; } // Nhãn kỳ thu, ví dụ: "Tháng 10/2026"
         public DateTime DueDate { get; set; }
         public DateTime? PaidDate { get; set; }
         public string PaymentMethod { get; set; } // "Chuyển khoản VietQR", "Tiền mặt"

@@ -17,5 +17,11 @@ namespace Qlykytucxa
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
+
+        protected void Application_BeginRequest()
+        {
+            // Tao bang mo rong + import JSON cu (chi chay that su o request dau tien)
+            DatabaseSetup.EnsureInitialized(Server.MapPath("~/App_Data"));
+        }
     }
 }

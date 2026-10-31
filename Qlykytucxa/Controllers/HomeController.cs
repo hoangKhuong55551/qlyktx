@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Web.Mvc;
-using Newtonsoft.Json;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
@@ -13,6 +12,7 @@ namespace Qlykytucxa.Controllers
     public class HomeController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
 
         public ActionResult Index()
         {
@@ -120,57 +120,29 @@ namespace Qlykytucxa.Controllers
             ViewBag.ExpiringContracts = expiringContracts;
 
             // 7. Danh sách yêu cầu sửa chữa chưa xử lý (từ Incidents)
-            ViewBag.PendingIncidents = GetPendingIncidents();
+            ViewBag.PendingIncidents = ext.IncidentRequests
+                .Where(i => i.Status != DormConstants.IncidentHoanThanh)
+                .OrderByDescending(i => i.CreatedAt)
+                .Take(5)
+                .ToList();
 
             // 8. Bảng tin thông báo KTX mới nhất
-            ViewBag.Announcements = GetActiveAnnouncements();
+            ViewBag.Announcements = ext.Announcements
+                .Where(a => a.IsActive)
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(3)
+                .ToList();
 
             return View();
         }
 
-        private List<IncidentRequest> GetPendingIncidents()
-        {
-            try
-            {
-                string appData = Server.MapPath("~/App_Data");
-                string path = System.IO.Path.Combine(appData, "incidents.json");
-                if (System.IO.File.Exists(path))
-                {
-                    string json = System.IO.File.ReadAllText(path);
-                    var list = JsonConvert.DeserializeObject<List<IncidentRequest>>(json) ?? new List<IncidentRequest>();
-                    return list.Where(i => i.Status != "Đã hoàn thành")
-                               .OrderByDescending(i => i.CreatedAt)
-                               .Take(5)
-                               .ToList();
-                }
-            }
-            catch
-            {
-                // Bỏ qua lỗi đọc file nếu có
-            }
-            return new List<IncidentRequest>();
-        }
-
-        private List<Announcement> GetActiveAnnouncements()
-        {
-            try
-            {
-                string appData = Server.MapPath("~/App_Data");
-                string path = System.IO.Path.Combine(appData, "announcements.json");
-                if (System.IO.File.Exists(path))
-                {
-                    string json = System.IO.File.ReadAllText(path);
-                    var list = JsonConvert.DeserializeObject<List<Announcement>>(json) ?? new List<Announcement>();
-                    return list.Where(a => a.IsActive).OrderByDescending(a => a.CreatedAt).Take(3).ToList();
-                }
-            }
-            catch { }
-            return new List<Announcement>();
-        }
-
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

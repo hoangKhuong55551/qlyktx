@@ -11,6 +11,19 @@ namespace Qlykytucxa.Models
         // Trang thai xep phong - phai khop chinh xac voi du lieu trong database
         public const string StatusDangO = "Đang ở";
         public const string StatusDaTraPhong = "Đã trả phòng";
+        public const string StatusDaThanhLy = "Đã thanh lý";
+
+        // Trang thai yeu cau su co
+        public const string IncidentMoiTiepNhan = "Mới tiếp nhận";
+        public const string IncidentDangXuLy = "Đang xử lý";
+        public const string IncidentHoanThanh = "Đã hoàn thành";
+        public const string ChuaPhanCong = "Chưa phân công";
+
+        // Loai giao dich so quy va khoan muc thu tu dong
+        public const string GiaoDichThu = "Thu";
+        public const string GiaoDichChi = "Chi";
+        public const string KhoanTienPhong = "Tiền phòng";
+        public const string KhoanDienNuoc = "Tiền điện nước";
 
         // Don gia dien/nuoc (VND) - chinh tai day khi can thay doi
         public const decimal ElectricPrice = 3500m;   // d/kWh

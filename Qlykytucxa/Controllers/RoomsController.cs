@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
+using Qlykytucxa.Services;
 
 namespace Qlykytucxa.Controllers
 {
@@ -15,6 +16,7 @@ namespace Qlykytucxa.Controllers
     public class RoomsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
 
         // GET: Rooms (Tìm kiếm, Lọc tòa nhà, Lọc tình trạng phòng & Tự động đồng bộ số người đang ở)
         public ActionResult Index(string searchString, string buildingFilter, string statusFilter)
@@ -101,6 +103,7 @@ namespace Qlykytucxa.Controllers
             var reg = db.RoomRegistrations.Include(r => r.Students).FirstOrDefault(r => r.RegistrationId == registrationId);
             if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở" || reg.Status == "Dang o"))
             {
+                RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
                 reg.Status = DormConstants.StatusDaTraPhong;
                 reg.CheckOutDate = DateTime.Now;
 
@@ -216,6 +219,13 @@ namespace Qlykytucxa.Controllers
                 return View(roomErr);
             }
 
+            if (ext.IncidentRequests.Any(i => i.RoomId == id))
+            {
+                ModelState.AddModelError("", "Không thể xóa phòng còn lịch sử báo hỏng / sửa chữa. Hãy xóa các yêu cầu sự cố trước.");
+                Rooms roomErr = db.Rooms.Find(id);
+                return View(roomErr);
+            }
+
             Rooms rooms = db.Rooms.Find(id);
             db.Rooms.Remove(rooms);
             db.SaveChanges();
@@ -225,7 +235,11 @@ namespace Qlykytucxa.Controllers
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

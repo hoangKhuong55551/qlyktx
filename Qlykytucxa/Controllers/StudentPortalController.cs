@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
-using System.IO;
 using System.Linq;
 using System.Web.Mvc;
-using Newtonsoft.Json;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
 
@@ -14,6 +12,7 @@ namespace Qlykytucxa.Controllers
     public class StudentPortalController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
 
         // Sinh vien: luon la chinh minh. Admin: xem thu cong SV cua sinh vien bat ky (mac dinh SV dau tien).
         private Students GetCurrentStudent(int? previewStudentId = null)
@@ -48,8 +47,7 @@ namespace Qlykytucxa.Controllers
             ViewBag.Student = student;
 
             // 1. Hợp đồng đang ở
-            var activeReg = db.RoomRegistrations.Include(r => r.Rooms)
-                .FirstOrDefault(r => r.StudentId == student.StudentId && (r.Status == "Đang ở" || r.Status == DormConstants.StatusDangO));
+            var activeReg = GetActiveRegistration(student.StudentId);
             ViewBag.ActiveRegistration = activeReg;
 
             // 2. Bạn cùng phòng
@@ -59,7 +57,7 @@ namespace Qlykytucxa.Controllers
                 roommates = db.RoomRegistrations.Include(r => r.Students)
                     .Where(r => r.RoomId == activeReg.RoomId 
                              && r.StudentId != student.StudentId 
-                             && (r.Status == "Đang ở" || r.Status == DormConstants.StatusDangO))
+                             && r.Status == DormConstants.StatusDangO)
                     .Select(r => r.Students)
                     .ToList();
             }
@@ -79,12 +77,17 @@ namespace Qlykytucxa.Controllers
             var incidents = new List<IncidentRequest>();
             if (activeReg != null)
             {
-                incidents = LoadRoomIncidents(activeReg.RoomId);
+                incidents = ext.IncidentRequests.Where(i => i.RoomId == activeReg.RoomId)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .ToList();
             }
             ViewBag.Incidents = incidents;
 
             // 5. Bảng tin thông báo
-            ViewBag.Announcements = LoadActiveAnnouncements();
+            ViewBag.Announcements = ext.Announcements.Where(a => a.IsActive)
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(4)
+                .ToList();
 
             return View();
         }
@@ -116,7 +119,7 @@ namespace Qlykytucxa.Controllers
                 RoomNumber = activeReg.Rooms.RoomNumber,
                 ReporterName = student.FullName,
                 CreatedAt = DateTime.Now,
-                Status = "Mới tiếp nhận"
+                Status = DormConstants.IncidentMoiTiepNhan
             };
             return View(model);
         }
@@ -139,7 +142,7 @@ namespace Qlykytucxa.Controllers
             model.RoomId = activeReg.RoomId;
             model.RoomNumber = activeReg.Rooms.RoomNumber;
             model.ReporterName = student.FullName;
-            model.AssignedTo = "Chưa phân công";
+            model.AssignedTo = DormConstants.ChuaPhanCong;
             model.Cost = 0;
             model.ResolvedAt = null;
             ModelState.Remove("RoomId");
@@ -147,23 +150,10 @@ namespace Qlykytucxa.Controllers
 
             if (ModelState.IsValid)
             {
-                string appData = Server.MapPath("~/App_Data");
-                string path = Path.Combine(appData, "incidents.json");
-                var list = new List<IncidentRequest>();
-
-                if (System.IO.File.Exists(path))
-                {
-                    string json = System.IO.File.ReadAllText(path);
-                    list = JsonConvert.DeserializeObject<List<IncidentRequest>>(json) ?? new List<IncidentRequest>();
-                }
-
-                int nextId = list.Any() ? list.Max(x => x.Id) + 1 : 1;
-                model.Id = nextId;
                 model.CreatedAt = DateTime.Now;
-                model.Status = "Mới tiếp nhận";
-
-                list.Insert(0, model);
-                System.IO.File.WriteAllText(path, JsonConvert.SerializeObject(list, Formatting.Indented));
+                model.Status = DormConstants.IncidentMoiTiepNhan;
+                ext.IncidentRequests.Add(model);
+                ext.SaveChanges();
 
                 TempData["Success"] = "Gửi yêu cầu báo hỏng thiết bị thành công! Ban Quản lý và thợ sửa chữa sẽ tiếp nhận xử lý sớm nhất.";
                 return RedirectToAction("Index");
@@ -171,41 +161,13 @@ namespace Qlykytucxa.Controllers
             return View(model);
         }
 
-        private List<IncidentRequest> LoadRoomIncidents(int roomId)
-        {
-            try
-            {
-                string path = Path.Combine(Server.MapPath("~/App_Data"), "incidents.json");
-                if (System.IO.File.Exists(path))
-                {
-                    string json = System.IO.File.ReadAllText(path);
-                    var list = JsonConvert.DeserializeObject<List<IncidentRequest>>(json) ?? new List<IncidentRequest>();
-                    return list.Where(i => i.RoomId == roomId).OrderByDescending(i => i.CreatedAt).ToList();
-                }
-            }
-            catch { }
-            return new List<IncidentRequest>();
-        }
-
-        private List<Announcement> LoadActiveAnnouncements()
-        {
-            try
-            {
-                string path = Path.Combine(Server.MapPath("~/App_Data"), "announcements.json");
-                if (System.IO.File.Exists(path))
-                {
-                    string json = System.IO.File.ReadAllText(path);
-                    var list = JsonConvert.DeserializeObject<List<Announcement>>(json) ?? new List<Announcement>();
-                    return list.Where(a => a.IsActive).OrderByDescending(a => a.CreatedAt).Take(4).ToList();
-                }
-            }
-            catch { }
-            return new List<Announcement>();
-        }
-
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

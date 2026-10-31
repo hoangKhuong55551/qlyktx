@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
+using Qlykytucxa.Services;
 
 namespace Qlykytucxa.Controllers
 {
@@ -15,6 +16,7 @@ namespace Qlykytucxa.Controllers
     public class RoomRegistrationsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
 
         // GET: RoomRegistrations (Tìm kiếm, Lọc theo trạng thái, Lọc sắp hết hạn)
         public ActionResult Index(string searchString, string statusFilter, string expiryFilter)
@@ -111,6 +113,7 @@ namespace Qlykytucxa.Controllers
             var reg = db.RoomRegistrations.Include(r => r.Students).Include(r => r.Rooms).FirstOrDefault(r => r.RegistrationId == registrationId);
             if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở"))
             {
+                RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
                 reg.Status = "Đã thanh lý";
                 reg.CheckOutDate = DateTime.Now;
 
@@ -239,6 +242,8 @@ namespace Qlykytucxa.Controllers
                 return RedirectToAction("Transfer");
             }
 
+            RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
+
             // 1. Kết thúc phòng cũ
             oldReg.Status = DormConstants.StatusDaTraPhong;
             oldReg.CheckOutDate = DateTime.Now;
@@ -277,6 +282,7 @@ namespace Qlykytucxa.Controllers
             var reg = db.RoomRegistrations.Include(r => r.Students).Include(r => r.Rooms).FirstOrDefault(r => r.RegistrationId == id);
             if (reg != null && (reg.Status == DormConstants.StatusDangO || reg.Status == "Đang ở"))
             {
+                RoomFeeService.EnsureMonthlyFees(db, ext); // chot tien phong den thang hien tai truoc khi ket thuc
                 reg.Status = DormConstants.StatusDaTraPhong;
                 reg.CheckOutDate = DateTime.Now;
 
@@ -352,23 +358,45 @@ namespace Qlykytucxa.Controllers
         public ActionResult DeleteConfirmed(int id)
         {
             RoomRegistrations roomRegistrations = db.RoomRegistrations.Find(id);
+            if (roomRegistrations == null) return HttpNotFound();
 
-            if (roomRegistrations.Status == DormConstants.StatusDangO || roomRegistrations.Status == "Đang ở")
+            // Xoa cac khoan tien phong chua thu va hop dong trong cung 1 transaction
+            using (var tx = db.Database.BeginTransaction())
+            using (var shared = DormExtContext.ShareConnection(db))
             {
-                var room = db.Rooms.Find(roomRegistrations.RoomId);
-                if (room != null && (room.CurrentOccupancy ?? 0) > 0)
-                    room.CurrentOccupancy -= 1;
-            }
+                shared.Database.UseTransaction(tx.UnderlyingTransaction);
 
-            db.RoomRegistrations.Remove(roomRegistrations);
-            db.SaveChanges();
+                var fees = shared.RoomFeePayments.Where(f => f.RegistrationId == id).ToList();
+                if (fees.Any(f => f.IsPaid))
+                {
+                    TempData["Error"] = "Không thể xóa hợp đồng đã có phiếu thu tiền phòng. Hãy dùng chức năng Trả phòng / Thanh lý.";
+                    return RedirectToAction("Index");
+                }
+                shared.RoomFeePayments.RemoveRange(fees);
+                shared.SaveChanges();
+
+                if (roomRegistrations.Status == DormConstants.StatusDangO || roomRegistrations.Status == "Đang ở")
+                {
+                    var room = db.Rooms.Find(roomRegistrations.RoomId);
+                    if (room != null && (room.CurrentOccupancy ?? 0) > 0)
+                        room.CurrentOccupancy -= 1;
+                }
+
+                db.RoomRegistrations.Remove(roomRegistrations);
+                db.SaveChanges();
+                tx.Commit();
+            }
             TempData["Success"] = "Xóa hợp đồng nội trú thành công!";
             return RedirectToAction("Index");
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }
