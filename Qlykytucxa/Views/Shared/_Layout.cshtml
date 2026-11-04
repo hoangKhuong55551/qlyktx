@@ -54,37 +54,65 @@
             background-color: var(--sidebar-bg);
             color: #94a3b8;
             flex-shrink: 0;
-            transition: all 0.25s ease-in-out;
+            transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
             display: flex;
             flex-direction: column;
-            z-index: 1000;
+            z-index: 1050;
             position: fixed;
             top: 0;
             bottom: 0;
             left: 0;
             overflow-y: auto;
-            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+            transform: translateX(-100%);
         }
 
-        #sidebar.collapsed {
-            width: var(--sidebar-collapsed-width);
+        #sidebar.open {
+            transform: translateX(0);
+            box-shadow: 8px 0 30px rgba(15, 23, 42, 0.25);
         }
 
-        #sidebar.collapsed .sidebar-brand-text,
-        #sidebar.collapsed .nav-text,
-        #sidebar.collapsed .sidebar-heading,
-        #sidebar.collapsed .badge-count {
-            display: none !important;
+        /* Nút mở menu ở mép trái (rê chuột vào để hiện menu) */
+        #sidebarEdge {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 10px;
+            z-index: 1040;
         }
 
-        #sidebar.collapsed .nav-link {
+        #sidebarTrigger {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 1045;
+            width: 26px;
+            height: 72px;
+            border: none;
+            border-radius: 0 10px 10px 0;
+            background: var(--sidebar-bg);
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            padding: 0.75rem 0;
+            cursor: pointer;
+            box-shadow: 2px 0 10px rgba(15, 23, 42, 0.2);
+            transition: width 0.2s ease, opacity 0.2s ease;
+            padding: 0;
         }
 
-        #sidebar.collapsed .nav-link i {
-            margin: 0 !important;
-            font-size: 1.35rem;
+        #sidebarTrigger:hover {
+            width: 34px;
+        }
+
+        #sidebarTrigger i {
+            font-size: 1.1rem;
+        }
+
+        body.sidebar-open #sidebarTrigger {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .sidebar-brand {
@@ -170,16 +198,10 @@
         /* Main Content Container */
         #content-wrapper {
             flex-grow: 1;
-            margin-left: var(--sidebar-width);
-            transition: margin-left 0.25s ease-in-out;
             display: flex;
             flex-direction: column;
             min-width: 0;
             min-height: 100vh;
-        }
-
-        #content-wrapper.expanded {
-            margin-left: var(--sidebar-collapsed-width);
         }
 
         /* Top Navbar */
@@ -246,23 +268,16 @@
         .alert-dismissible .btn-close {
             padding: 1rem;
         }
-
-        /* Responsive Mobile */
-        @@media (max-width: 768px) {
-            #sidebar {
-                margin-left: calc(-1 * var(--sidebar-width));
-            }
-            #sidebar.show-mobile {
-                margin-left: 0;
-            }
-            #content-wrapper {
-                margin-left: 0 !important;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="wrapper">
+        <!-- Vùng mép trái + nút mở menu: rê chuột vào để hiện thanh công cụ -->
+        <div id="sidebarEdge"></div>
+        <button type="button" id="sidebarTrigger" title="Mở menu" aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false">
+            <i class="bi bi-chevron-double-right"></i>
+        </button>
+
         <!-- Sidebar -->
         <nav id="sidebar">
             <a href="@Url.Action("Index", "Home")" class="sidebar-brand">
@@ -476,15 +491,50 @@
     @Scripts.Render("~/bundles/bootstrap")
 
     <script>
-        // Toggle Sidebar Script
+        // Thanh công cụ bên trái: ẩn mặc định, rê chuột vào nút ở mép trái để hiện
         $(document).ready(function () {
-            $('#sidebarToggle').on('click', function () {
-                if ($(window).width() <= 768) {
-                    $('#sidebar').toggleClass('show-mobile');
-                } else {
-                    $('#sidebar').toggleClass('collapsed');
-                    $('#content-wrapper').toggleClass('expanded');
-                }
+            var $sidebar = $('#sidebar');
+            var $trigger = $('#sidebarTrigger');
+            var hideTimer = null;
+
+            function openSidebar() {
+                clearTimeout(hideTimer);
+                $sidebar.addClass('open');
+                $('body').addClass('sidebar-open');
+                $trigger.attr('aria-expanded', 'true');
+            }
+
+            function closeSidebar() {
+                clearTimeout(hideTimer);
+                $sidebar.removeClass('open');
+                $('body').removeClass('sidebar-open');
+                $trigger.attr('aria-expanded', 'false');
+            }
+
+            function scheduleClose() {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(closeSidebar, 300);
+            }
+
+            // Rê chuột (máy tính)
+            $('#sidebarTrigger, #sidebarEdge').on('mouseenter', openSidebar);
+            $sidebar.on('mouseenter', openSidebar).on('mouseleave', scheduleClose);
+            $('#sidebarTrigger, #sidebarEdge').on('mouseleave', function (e) {
+                if (!$(e.relatedTarget).closest('#sidebar').length) scheduleClose();
+            });
+
+            // Bấm (điện thoại / màn hình cảm ứng) và nút trên thanh tiêu đề
+            $('#sidebarTrigger, #sidebarToggle').on('click', function (e) {
+                e.stopPropagation();
+                $sidebar.hasClass('open') ? closeSidebar() : openSidebar();
+            });
+
+            // Bấm ra ngoài hoặc nhấn Esc để đóng
+            $(document).on('click', function (e) {
+                if ($sidebar.hasClass('open') && !$(e.target).closest('#sidebar').length) closeSidebar();
+            });
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape') closeSidebar();
             });
         });
     </script>
