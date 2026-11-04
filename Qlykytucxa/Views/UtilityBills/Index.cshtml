@@ -96,7 +96,7 @@
                             int eDiff = item.NewElectricIndex - item.OldElectricIndex;
                             int wDiff = item.NewWaterIndex - item.OldWaterIndex;
 
-                            <tr>
+                            <tr class="@(item.IsPaid ? "" : "row-accent-warning")">
                                 <td class="ps-3 fw-bold text-primary">Phòng @item.Rooms.RoomNumber</td>
                                 <td><span class="badge bg-light text-dark border">Tháng @item.BillingMonth/@item.BillingYear</span></td>
                                 <td>@item.OldElectricIndex &rarr; @item.NewElectricIndex (<strong>@eDiff</strong> kWh)</td>

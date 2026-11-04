@@ -97,7 +97,7 @@
                                 }
                             }
 
-                            <tr>
+                            <tr class="@(isExpired ? "row-accent-danger" : (isExpiringSoon ? "row-accent-warning" : ""))">
                                 <td class="ps-3 fw-bold text-primary">@item.Students.StudentCode</td>
                                 <td class="fw-semibold">
                                     @item.Students.FullName

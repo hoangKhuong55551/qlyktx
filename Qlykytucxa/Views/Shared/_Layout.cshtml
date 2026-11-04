@@ -3,58 +3,57 @@
     string currentRole = userSession != null ? userSession.Role : (Session["Role"] as string ?? "");
     string currentName = userSession != null ? userSession.FullName : (Session["FullName"] as string ?? "");
     string avatarText = currentRole == "Student" ? "SV" : (currentRole == "Staff" ? "KT" : "AD");
+    string roleText = currentRole == "Student" ? "Sinh viên" : (currentRole == "Staff" ? "Kỹ thuật viên" : (currentRole == "Admin" ? "Quản trị viên" : currentRole));
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - Hệ Thống Quản Lý Ký Túc Xá</title>
+    <title>@ViewBag.Title - DormNest | Quản lý Ký túc xá</title>
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
     
     <!-- Google Fonts & Bootstrap Icons & Chart.js -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --sidebar-width: 260px;
-            --sidebar-collapsed-width: 78px;
-            --topbar-height: 64px;
-            --primary-navy: #1e293b;
-            --sidebar-bg: #0f172a;
-            --sidebar-hover: #1e293b;
-            --sidebar-active: #3b82f6;
-            --body-bg: #f8fafc;
+            --sidebar-width: 272px;
+            --topbar-height: 68px;
+            --sidebar-bg: #1a1d5c;
+            --sidebar-bg-2: #22276f;
+            --sidebar-text: #b4bbe3;
+            --sidebar-hover: rgba(255, 255, 255, 0.06);
+            --brand-1: #4361ee;
+            --brand-2: #4361ee;
+            --brand-3: #4361ee;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: var(--body-bg);
-            color: #1e293b;
+            font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
             overflow-x: hidden;
             margin: 0;
             padding: 0;
         }
 
-        /* Wrapper */
         #wrapper {
             display: flex;
             min-height: 100vh;
             width: 100%;
         }
 
-        /* Sidebar */
+        /* ===== Sidebar (ẩn mặc định, trượt ra khi rê chuột) ===== */
         #sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
-            color: #94a3b8;
-            flex-shrink: 0;
-            transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.08' stroke-width='1.3'%3E%3Cpath d='M172.8 160.0L172.4 162.3L170.9 164.5L168.8 166.3L166.5 167.9L164.3 169.3L162.4 170.6L160.8 171.9L159.3 173.3L157.7 174.5L155.9 175.6L154.0 176.4L151.9 176.9L149.8 177.3L147.8 177.7L145.9 178.1L144.0 178.7L142.1 179.3L140.0 179.8L137.9 180.1L135.7 180.2L133.5 180.0L131.3 179.6L129.0 179.3L126.5 179.2L123.7 179.0L120.8 178.8L117.8 178.2L115.1 177.1L113.2 175.4L112.4 173.1L112.8 170.4L114.3 167.7L116.4 165.2L118.4 163.1L120.0 161.4L120.8 160.0L120.6 158.6L119.7 157.1L118.6 155.3L117.6 153.3L117.2 151.3L117.4 149.3L118.2 147.5L119.5 145.9L120.9 144.4L122.5 142.9L124.1 141.4L125.9 140.0L127.9 138.7L130.1 137.6L132.5 136.9L135.0 136.7L137.5 136.8L140.0 137.2L142.4 137.7L144.7 138.2L146.9 138.8L149.1 139.6L151.0 140.7L152.5 142.2L153.6 144.1L154.2 146.1L154.5 148.1L154.9 149.7L155.8 150.9L157.4 151.7L160.0 152.4L163.2 153.1L166.6 154.2L169.7 155.7L171.8 157.7Z'/%3E%3Cpath d='M205.9 160.0L204.4 164.6L200.9 168.8L196.4 172.4L191.6 175.4L187.4 178.1L183.9 180.8L181.0 183.5L178.2 186.3L175.3 188.9L171.8 191.1L168.0 192.7L163.8 193.8L159.7 194.6L155.7 195.3L151.8 196.2L148.0 197.3L144.1 198.6L140.0 199.7L135.7 200.4L131.3 200.6L126.8 200.5L122.2 200.0L117.5 199.6L112.3 199.3L106.7 198.9L100.8 198.3L95.1 196.8L90.2 194.3L87.0 190.4L86.0 185.5L87.4 180.1L90.6 174.8L94.7 170.0L98.5 166.0L101.1 162.8L101.9 160.0L100.8 157.2L98.5 154.0L95.9 150.3L93.9 146.2L93.2 142.1L93.9 138.2L95.8 134.6L98.6 131.5L101.7 128.6L105.0 125.8L108.3 122.9L111.8 120.0L115.7 117.3L120.1 115.2L124.9 113.8L130.0 113.3L135.1 113.6L140.0 114.4L144.8 115.5L149.3 116.7L153.7 118.1L157.8 119.9L161.4 122.3L164.3 125.4L166.4 129.1L167.7 132.9L168.6 136.5L169.9 139.4L172.2 141.5L176.1 142.9L181.6 144.1L188.3 145.6L195.1 147.9L201.0 151.2L204.7 155.4Z'/%3E%3Cpath d='M238.9 160.0L235.7 166.9L229.7 173.0L222.5 178.1L215.5 182.5L209.4 186.6L204.7 190.6L200.8 194.9L197.0 199.2L192.8 203.3L187.8 206.7L182.0 209.2L175.7 210.8L169.5 211.9L163.5 212.9L157.7 214.2L152.0 215.9L146.2 217.8L140.0 219.7L133.5 221.0L126.7 221.7L119.8 221.7L112.8 221.3L105.4 220.8L97.5 220.3L89.1 219.6L80.4 218.2L72.3 215.5L65.7 211.1L61.8 204.9L61.1 197.3L63.8 189.1L68.9 181.2L74.8 174.3L80.0 168.7L82.9 164.1L82.9 160.0L80.3 155.7L76.1 150.8L71.9 145.0L68.9 138.8L68.1 132.5L69.6 126.7L73.0 121.5L77.5 117.0L82.5 112.9L87.5 108.7L92.5 104.4L97.7 100.0L103.6 95.9L110.1 92.7L117.3 90.6L124.9 89.9L132.6 90.4L140.0 91.8L147.1 93.6L153.8 95.7L160.2 98.1L166.2 101.1L171.4 104.9L175.5 109.5L178.6 114.8L180.7 120.2L182.6 125.1L185.2 128.9L189.6 131.5L196.2 133.4L205.2 135.1L215.5 137.5L225.5 141.2L233.6 146.5L238.3 152.9Z'/%3E%3Cpath d='M271.4 160.0L265.9 169.0L257.1 176.9L247.3 183.6L238.0 189.3L230.6 194.6L224.9 200.2L220.3 206.1L215.8 212.2L210.4 217.8L203.8 222.4L196.0 225.6L187.6 227.6L179.2 229.0L171.2 230.2L163.5 232.0L156.0 234.4L148.2 237.2L140.0 240.0L131.2 242.1L122.1 243.4L112.6 243.8L102.9 243.5L92.8 243.0L82.1 242.2L71.0 240.8L59.8 238.4L49.7 234.1L41.9 227.5L37.8 218.7L38.0 208.3L42.2 197.4L49.0 187.1L56.5 178.3L62.3 171.2L64.8 165.4L63.4 160.0L58.7 154.2L52.3 147.3L46.3 139.4L42.6 130.9L42.0 122.5L44.7 114.9L49.9 108.3L56.5 102.5L63.4 97.2L70.1 91.7L76.7 85.9L83.6 79.9L91.3 74.4L100.0 70.0L109.7 67.2L119.9 66.4L130.1 67.3L140.0 69.4L149.4 72.2L158.2 75.4L166.5 79.0L174.1 83.3L180.7 88.4L186.1 94.5L190.3 101.1L193.5 107.7L196.7 113.5L201.2 117.9L208.2 120.9L218.1 123.0L230.7 125.3L244.5 128.8L257.4 134.2L267.2 141.6L272.0 150.5Z'/%3E%3Cpath d='M302.9 160.0L294.6 171.1L283.0 180.7L270.5 188.7L259.5 195.7L250.9 202.4L244.8 209.6L239.8 217.3L234.7 225.2L228.2 232.3L219.9 238.1L210.1 242.0L199.4 244.4L188.8 245.9L178.8 247.4L169.3 249.6L160.0 252.9L150.3 256.8L140.0 260.7L128.9 264.0L117.2 266.0L105.1 266.9L92.6 266.8L79.7 266.0L66.3 264.7L52.5 262.4L39.2 258.5L27.5 252.2L19.1 243.2L15.3 231.6L16.6 218.4L22.4 204.9L30.9 192.6L39.4 182.1L45.2 173.7L46.5 166.7L42.9 160.0L35.6 152.5L26.9 143.6L19.4 133.5L15.1 122.7L15.3 112.3L19.6 103.0L26.9 95.0L35.5 88.1L44.4 81.6L52.8 74.8L60.9 67.4L69.4 59.8L79.0 52.7L89.9 47.0L102.0 43.7L114.8 42.9L127.7 44.4L140.0 47.5L151.6 51.6L162.4 56.1L172.4 60.9L181.5 66.4L189.6 72.8L196.3 80.1L201.7 87.8L206.3 95.2L211.4 101.5L218.3 106.1L228.3 109.3L241.8 111.8L258.1 114.8L275.2 119.6L290.5 126.9L301.2 136.7L305.5 148.1Z'/%3E%3Cpath d='M333.1 160.0L321.8 173.0L307.1 184.2L292.4 193.5L279.9 201.8L270.8 210.0L264.6 219.0L259.5 228.6L253.9 238.3L246.2 247.1L236.1 253.9L224.0 258.4L211.1 260.9L198.3 262.5L186.3 264.3L175.0 267.2L164.0 271.5L152.5 276.8L140.0 282.2L126.5 286.7L112.1 289.7L97.2 291.1L81.8 291.0L66.1 289.9L50.1 287.7L34.1 284.1L18.9 278.3L6.2 269.7L-2.4 258.0L-5.5 243.6L-2.9 227.6L4.5 211.8L14.2 197.5L23.0 185.7L28.0 176.2L27.4 168.1L21.1 160.0L11.0 150.7L-0.1 139.7L-9.0 127.3L-13.2 114.3L-11.9 101.9L-5.6 91.0L3.9 81.9L14.9 73.9L25.6 66.2L35.5 57.9L45.1 48.8L55.1 39.4L66.4 30.7L79.6 23.9L94.3 20.1L109.8 19.6L125.3 21.9L140.0 26.3L153.7 31.8L166.3 37.7L177.9 44.0L188.5 50.6L198.0 58.0L206.1 66.1L213.0 74.5L219.5 82.3L226.8 88.8L236.6 93.5L250.1 96.8L267.3 99.7L287.3 103.7L307.4 110.0L324.4 119.5L335.3 131.8L338.2 145.8Z'/%3E%3Cpath d='M361.8 160.0L347.2 174.9L329.7 187.4L313.0 198.0L299.7 207.7L290.5 217.5L284.5 228.4L279.5 240.1L273.3 251.7L264.3 261.9L252.2 269.7L237.8 274.6L222.5 277.2L207.6 278.9L193.7 281.0L180.8 284.8L168.1 290.5L154.7 297.4L140.0 304.5L123.9 310.5L106.8 314.5L88.9 316.4L70.7 316.2L52.2 314.3L33.8 310.9L15.8 305.5L-0.7 297.5L-14.0 286.3L-22.4 271.7L-24.6 254.5L-20.5 236.0L-11.9 218.1L-1.5 202.2L7.0 189.2L10.4 178.7L7.2 169.5L-2.2 160.0L-15.4 148.8L-28.8 135.6L-38.6 120.8L-42.4 105.6L-39.4 91.4L-30.8 79.2L-18.7 68.9L-5.6 59.9L6.9 50.9L18.3 41.0L29.1 30.1L40.5 18.7L53.8 8.3L69.2 0.5L86.6 -3.5L104.8 -3.5L122.9 0.1L140.0 6.0L155.7 13.2L170.0 20.6L183.1 28.1L195.2 35.7L206.1 43.8L215.8 52.4L224.6 61.0L233.3 68.8L243.4 75.2L256.5 79.9L273.6 83.3L294.7 86.8L318.0 91.9L340.6 100.1L358.6 112.0L368.9 126.9L369.8 143.5Z'/%3E%3Cpath d='M388.6 160.0L370.8 176.6L350.8 190.5L332.7 202.3L319.0 213.4L310.2 225.1L304.7 238.0L299.9 251.8L293.0 265.3L282.6 276.9L268.3 285.4L251.4 290.5L233.7 293.1L216.7 294.9L201.1 297.6L186.6 302.5L172.2 309.9L156.9 318.9L140.0 327.9L121.3 335.5L101.2 340.6L80.3 342.7L59.2 342.1L38.2 339.1L17.5 333.9L-2.1 326.4L-19.4 315.8L-32.9 301.8L-40.7 284.3L-41.8 264.4L-36.5 243.6L-27.0 223.8L-16.5 206.7L-9.2 192.8L-8.0 181.4L-14.5 171.1L-27.4 160.0L-43.6 146.8L-58.9 131.2L-69.2 114.0L-71.9 96.7L-66.9 80.9L-55.6 67.4L-40.9 56.1L-25.7 46.0L-11.6 35.7L0.9 24.1L12.8 11.1L25.7 -2.3L40.9 -14.3L58.8 -23.0L78.9 -27.0L100.0 -26.1L120.7 -21.0L140.0 -13.2L157.5 -4.3L173.4 4.7L188.0 13.2L201.5 21.5L214.0 29.9L225.5 38.5L236.5 46.9L248.0 54.5L261.2 60.6L278.0 65.1L299.0 68.7L323.7 73.0L350.0 79.7L374.4 90.1L392.6 104.5L401.6 122.2L399.9 141.4Z'/%3E%3Cpath d='M502.7 450.0L500.1 452.2L497.6 454.0L495.8 455.7L494.8 457.4L494.3 459.3L494.1 461.4L493.5 463.5L492.4 465.4L490.6 466.9L488.3 467.9L485.7 468.4L483.1 468.6L480.8 469.0L478.8 469.7L476.9 471.0L474.9 472.7L472.6 474.5L470.0 476.3L467.1 477.6L463.9 478.2L460.8 478.2L457.8 477.6L455.0 476.4L452.4 474.9L450.3 473.1L448.5 471.0L447.4 468.6L446.9 465.9L447.0 463.2L447.7 460.6L448.4 458.3L448.9 456.3L448.6 454.7L447.3 453.3L445.3 451.8L442.7 450.0L440.3 447.9L438.5 445.4L437.8 442.9L438.4 440.6L439.9 438.5L442.1 436.8L444.4 435.3L446.5 433.8L448.2 432.1L449.7 430.2L451.3 428.1L453.1 426.0L455.4 424.4L458.2 423.5L461.3 423.4L464.5 424.2L467.4 425.5L470.0 427.1L472.3 428.6L474.3 429.8L476.3 430.7L478.3 431.3L480.3 431.9L482.4 432.3L484.7 432.8L487.1 433.3L489.8 433.8L492.8 434.3L496.2 435.0L499.6 436.0L502.8 437.5L505.2 439.5L506.5 442.0L506.4 444.7L505.0 447.5Z'/%3E%3Cpath d='M534.0 450.0L528.8 454.2L524.2 457.8L521.0 461.2L519.4 464.7L518.8 468.7L518.4 472.9L517.3 477.2L515.0 481.0L511.2 483.8L506.4 485.6L501.1 486.4L496.0 487.0L491.5 487.8L487.6 489.6L483.9 492.4L479.9 496.1L475.3 500.1L470.0 503.7L464.0 506.2L457.7 507.4L451.4 507.0L445.4 505.4L440.0 502.8L435.2 499.4L431.2 495.5L428.0 491.0L425.9 486.1L425.1 480.9L425.4 475.6L426.4 470.7L427.5 466.3L427.8 462.6L426.6 459.5L423.6 456.7L419.2 453.6L414.0 450.0L409.2 445.6L406.0 440.8L405.1 435.7L406.6 431.1L410.0 427.1L414.5 423.7L419.0 420.7L423.1 417.7L426.4 414.2L429.3 410.2L432.3 405.8L436.0 401.8L440.8 398.7L446.5 397.1L452.8 397.3L459.1 399.2L464.9 402.1L470.0 405.3L474.5 408.2L478.5 410.5L482.4 412.0L486.5 412.9L490.7 413.6L495.2 414.2L500.0 414.9L505.1 415.7L510.8 416.6L517.0 417.7L523.6 419.2L530.3 421.5L536.2 424.7L540.5 429.0L542.5 434.1L541.8 439.6L538.7 445.1Z'/%3E%3Cpath d='M563.8 450.0L556.3 456.2L550.0 461.6L545.9 466.7L544.0 472.1L543.5 478.1L543.1 484.6L541.4 491.0L537.6 496.5L531.7 500.6L524.2 503.0L516.3 504.2L508.8 505.1L502.2 506.7L496.5 509.7L491.1 514.4L485.1 520.4L478.2 526.8L470.0 532.2L460.8 535.9L451.2 537.3L441.8 536.2L433.1 533.2L425.3 528.7L418.5 523.1L412.9 516.9L408.6 510.0L405.7 502.7L404.5 495.0L404.8 487.5L405.9 480.4L406.8 474.2L406.4 469.0L403.8 464.5L398.7 460.3L391.6 455.6L383.8 450.0L377.0 443.3L372.8 435.9L372.0 428.5L374.9 421.6L380.4 415.7L387.2 410.8L393.9 406.3L399.7 401.6L404.4 396.2L408.5 389.9L413.0 383.3L418.8 377.3L426.2 372.9L434.9 371.0L444.5 371.9L453.9 375.1L462.5 379.7L470.0 384.6L476.5 388.9L482.5 391.9L488.4 393.7L494.6 394.5L501.3 394.9L508.5 395.3L516.1 396.0L524.3 397.0L533.0 398.3L542.4 400.2L552.2 402.8L561.7 406.6L569.9 411.8L575.6 418.5L577.7 426.3L576.0 434.7L570.9 442.8Z'/%3E%3Cpath d='M592.2 450.0L582.8 458.1L575.3 465.2L570.7 472.1L568.8 479.5L568.6 487.7L568.0 496.4L565.5 504.9L560.1 512.0L551.9 517.1L541.8 520.1L531.2 521.7L521.4 523.1L513.0 525.6L505.6 530.3L498.5 537.3L490.6 545.9L481.2 554.6L470.0 562.0L457.6 566.6L444.7 567.8L432.2 565.6L420.9 560.7L410.9 553.9L402.4 545.9L395.5 537.2L390.2 528.0L386.7 518.3L385.1 508.4L385.1 498.8L385.8 489.9L386.1 482.1L384.5 475.5L380.0 469.8L372.4 464.1L362.5 457.7L352.2 450.0L343.7 440.9L338.9 431.0L338.8 421.2L343.3 412.2L351.1 404.5L360.2 398.0L368.9 392.0L376.3 385.5L382.2 378.0L387.5 369.4L393.6 360.5L401.4 352.6L411.6 347.2L423.6 345.4L436.4 347.2L448.9 352.1L460.2 358.6L470.0 365.2L478.5 370.5L486.4 373.9L494.3 375.5L502.9 375.8L512.3 375.6L522.4 375.5L533.2 376.0L544.5 377.2L556.4 379.1L569.0 381.9L581.7 385.9L593.7 391.5L603.6 398.9L610.0 408.2L611.8 418.8L608.7 429.9L601.6 440.6Z'/%3E%3Cpath d='M619.5 450.0L608.5 459.9L600.1 468.8L595.4 477.6L594.0 487.0L594.0 497.4L593.3 508.4L589.8 518.8L582.5 527.4L571.8 533.5L559.0 537.0L545.9 538.9L534.0 541.0L523.9 544.8L515.0 551.5L506.3 561.1L496.3 572.5L484.3 583.8L470.0 592.8L454.2 598.0L438.0 598.6L422.7 594.9L408.9 587.7L397.0 578.3L387.2 567.6L379.2 556.4L373.0 544.8L368.8 533.0L366.6 521.1L366.0 509.7L366.0 499.2L365.1 490.1L361.8 482.3L355.0 475.3L344.7 468.1L332.1 459.9L319.5 450.0L309.6 438.5L304.7 426.1L305.6 413.9L312.0 402.9L322.1 393.5L333.5 385.4L344.0 377.7L352.7 369.3L359.7 359.5L366.2 348.5L373.9 337.4L384.0 327.9L397.1 321.8L412.4 320.3L428.7 323.5L444.2 330.2L458.1 338.7L470.0 346.8L480.4 352.9L490.1 356.4L500.3 357.3L511.5 356.5L523.8 355.3L537.2 354.6L551.2 354.9L565.8 356.3L581.0 359.0L596.5 363.0L611.8 368.6L625.8 376.2L637.0 386.2L643.7 398.2L644.8 411.6L640.1 425.4L631.0 438.5Z'/%3E%3Cpath d='M645.8 450.0L633.6 461.7L624.8 472.4L620.3 483.0L619.4 494.6L619.8 507.3L618.8 520.4L614.0 532.7L604.7 542.7L591.4 549.6L575.9 553.5L560.5 556.0L546.7 558.9L535.0 564.4L524.8 573.5L514.5 586.0L502.4 600.4L487.5 614.2L470.0 624.7L450.8 630.1L431.4 629.6L413.2 623.8L397.3 613.9L383.8 601.6L372.8 588.1L363.8 574.3L356.9 560.6L351.9 546.8L348.9 533.3L347.3 520.5L346.0 508.7L343.5 498.4L338.0 489.4L328.6 481.1L315.5 472.3L300.3 462.2L285.8 450.0L275.0 436.0L270.3 421.1L272.6 406.6L281.1 393.6L293.5 382.5L307.0 372.8L319.1 363.4L328.9 352.9L336.8 340.8L344.5 327.4L354.0 314.1L366.7 303.3L382.9 296.8L401.7 296.1L421.3 300.9L439.8 309.7L456.1 320.1L470.0 329.5L482.2 336.0L493.9 338.9L506.4 338.6L520.4 336.5L536.0 334.0L552.8 332.5L570.3 332.5L588.3 334.4L606.5 338.1L624.7 343.6L642.2 351.1L657.8 361.1L669.8 373.6L676.3 388.4L676.4 404.7L670.1 421.1L659.0 436.4Z'/%3E%3Cpath d='M671.2 450.0L658.3 463.5L649.5 476.0L645.6 488.6L645.3 502.3L645.9 517.3L644.4 532.6L638.2 546.6L626.6 557.8L610.7 565.4L592.6 569.8L574.9 572.9L559.5 577.1L546.5 584.5L535.0 596.5L523.0 612.2L508.6 629.7L490.9 645.8L470.0 657.5L447.3 662.5L424.8 660.4L404.0 652.0L386.1 639.0L371.3 623.5L359.3 607.3L349.5 591.1L341.7 575.4L335.8 560.0L331.6 545.2L328.6 531.2L325.7 518.3L321.0 507.0L313.1 496.8L300.9 487.1L285.0 476.7L267.4 464.5L251.2 450.0L239.9 433.5L235.9 416.1L239.9 399.4L250.6 384.5L265.3 371.7L280.6 360.4L294.2 349.0L304.9 336.4L313.7 321.8L322.6 306.0L334.0 290.8L349.5 278.8L369.0 272.4L391.4 272.8L414.3 279.6L435.7 290.6L454.3 302.7L470.0 313.1L483.9 319.4L497.7 321.3L512.7 319.3L529.8 315.4L548.8 311.4L569.3 309.0L590.4 309.0L611.7 311.5L632.8 316.5L653.4 323.8L672.7 333.6L689.4 346.1L701.7 361.4L707.8 379.0L706.6 398.0L698.6 416.9L685.8 434.5Z'/%3E%3Cpath d='M539.5 90.0L539.3 91.4L539.2 92.8L539.2 94.2L539.1 95.7L538.7 97.1L538.0 98.5L536.9 99.7L535.8 100.9L534.6 102.0L533.6 103.2L532.6 104.8L531.7 106.6L530.6 108.6L529.1 110.6L527.2 112.0L524.9 112.7L522.4 112.5L520.0 111.3L517.9 109.4L516.3 107.3L515.0 105.2L514.0 103.6L512.8 102.6L511.5 102.0L509.9 101.8L508.0 101.7L506.1 101.4L504.3 100.8L502.7 99.9L501.3 98.9L500.1 97.6L498.9 96.3L497.9 94.9L496.8 93.3L496.0 91.7L495.5 90.0L495.5 88.2L495.9 86.5L496.7 84.9L497.7 83.3L498.8 81.9L499.8 80.5L500.9 79.0L502.1 77.7L503.5 76.5L505.3 75.6L507.4 75.2L509.7 75.4L512.0 75.9L514.1 76.7L515.8 77.2L517.2 77.2L518.6 76.5L520.0 75.2L521.8 73.5L523.9 71.7L526.4 70.4L529.0 69.7L531.4 69.9L533.5 70.8L535.1 72.3L536.3 74.0L537.2 75.9L538.0 77.6L538.7 79.3L539.4 80.8L540.0 82.4L540.3 83.9L540.4 85.5L540.2 87.1L539.9 88.6Z'/%3E%3Cpath d='M559.1 90.0L558.6 92.8L558.4 95.6L558.3 98.4L558.0 101.3L557.2 104.2L555.9 107.0L554.1 109.6L552.0 112.0L549.9 114.5L547.9 117.3L546.1 120.6L544.2 124.4L541.8 128.3L538.6 131.8L534.5 134.2L529.7 135.0L524.7 133.9L520.0 131.0L516.0 127.1L513.0 122.8L510.5 119.0L508.4 116.2L506.0 114.7L503.0 114.1L499.4 114.1L495.4 114.0L491.3 113.5L487.6 112.3L484.4 110.4L481.8 108.1L479.6 105.5L477.5 102.7L475.5 99.8L473.6 96.7L472.0 93.4L471.1 90.0L471.0 86.5L471.8 83.0L473.3 79.7L475.3 76.7L477.5 73.7L479.7 70.9L482.0 68.2L484.6 65.6L487.6 63.5L491.4 62.0L495.7 61.5L500.2 61.9L504.6 62.9L508.5 64.0L511.7 64.5L514.4 63.9L517.0 62.0L520.0 58.9L523.7 55.2L528.2 51.7L533.3 49.3L538.5 48.4L543.2 49.3L547.0 51.7L549.9 55.0L552.0 58.8L553.6 62.5L555.0 65.9L556.5 69.0L558.0 72.0L559.3 75.0L560.2 78.0L560.5 81.1L560.3 84.2L559.7 87.2Z'/%3E%3Cpath d='M578.6 90.0L577.8 94.1L577.5 98.3L577.3 102.6L576.8 107.0L575.9 111.4L574.1 115.6L571.7 119.7L568.8 123.6L566.0 127.7L563.3 132.3L560.5 137.5L557.4 143.1L553.4 148.7L548.1 153.4L541.6 156.2L534.3 156.4L526.8 153.8L520.0 149.0L514.4 142.8L510.0 136.6L506.4 131.5L503.0 128.2L499.1 126.8L494.2 126.7L488.3 127.1L481.9 127.3L475.6 126.4L470.0 124.4L465.4 121.3L461.8 117.6L458.7 113.4L455.9 109.1L453.1 104.7L450.4 100.1L448.0 95.2L446.6 90.0L446.3 84.7L447.5 79.5L449.8 74.6L452.8 69.9L456.2 65.6L459.8 61.5L463.5 57.6L467.7 54.0L472.6 51.2L478.4 49.4L484.8 48.8L491.4 49.4L497.6 50.6L503.0 51.7L507.5 51.6L511.4 49.8L515.3 46.0L520.0 40.7L525.9 35.0L532.9 30.0L540.6 27.0L548.2 26.5L554.9 28.7L560.2 32.9L564.0 38.5L566.7 44.3L568.9 49.9L571.1 54.8L573.5 59.3L576.1 63.4L578.4 67.7L580.0 72.1L580.6 76.7L580.4 81.3L579.5 85.7Z'/%3E%3Cpath d='M597.8 90.0L596.8 95.5L596.3 101.0L596.1 106.7L595.7 112.6L594.7 118.6L592.8 124.5L590.0 130.2L586.6 135.9L583.1 141.8L579.5 148.2L575.7 155.2L571.1 162.6L565.2 169.5L557.6 174.8L548.5 177.3L538.6 176.4L528.8 172.0L520.0 165.0L512.9 156.8L507.3 149.1L502.6 143.3L497.8 140.0L492.0 139.2L484.8 140.0L476.3 141.1L467.4 141.4L458.9 140.1L451.6 137.1L445.8 132.6L441.5 127.2L437.8 121.4L434.4 115.5L430.8 109.6L427.1 103.4L423.9 96.9L421.8 90.0L421.5 82.9L422.9 76.0L426.1 69.4L430.4 63.2L435.2 57.6L440.4 52.3L445.8 47.4L451.8 43.1L458.7 39.7L466.4 37.6L474.8 37.0L483.1 37.6L490.8 38.7L497.4 39.2L503.0 37.9L508.0 34.3L513.4 28.3L520.0 20.7L528.2 13.1L537.9 7.0L548.1 3.9L558.0 4.4L566.4 8.5L572.8 15.0L577.3 22.9L580.5 30.9L583.3 38.1L586.4 44.3L590.0 49.8L593.9 55.0L597.4 60.4L599.8 66.2L600.8 72.2L600.5 78.4L599.2 84.3Z'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(180deg, var(--sidebar-bg-2) 0%, var(--sidebar-bg) 100%);
+            background-size: 600px 600px, 100% 100%;
+            color: var(--sidebar-text);
             display: flex;
             flex-direction: column;
             z-index: 1050;
@@ -64,14 +63,33 @@
             left: 0;
             overflow-y: auto;
             transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
         }
 
         #sidebar.open {
             transform: translateX(0);
-            box-shadow: 8px 0 30px rgba(15, 23, 42, 0.25);
+            box-shadow: 12px 0 40px rgba(17, 19, 64, 0.35);
         }
 
-        /* Nút mở menu ở mép trái (rê chuột vào để hiện menu) */
+        /* Lớp mờ phía sau khi menu mở */
+        #sidebarBackdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 29, 92, 0.18);
+            z-index: 1049;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        body.sidebar-open #sidebarBackdrop {
+            opacity: 1;
+        }
+
+        /* Vùng mép trái + nút mở menu */
         #sidebarEdge {
             position: fixed;
             top: 0;
@@ -87,17 +105,17 @@
             left: 0;
             transform: translateY(-50%);
             z-index: 1045;
-            width: 26px;
-            height: 72px;
+            width: 24px;
+            height: 84px;
             border: none;
-            border-radius: 0 10px 10px 0;
-            background: var(--sidebar-bg);
-            color: #38bdf8;
+            border-radius: 0 14px 14px 0;
+            background: var(--brand-2);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 2px 0 10px rgba(15, 23, 42, 0.2);
+            box-shadow: 4px 0 18px rgba(67, 97, 238, 0.35);
             transition: width 0.2s ease, opacity 0.2s ease;
             padding: 0;
         }
@@ -107,7 +125,13 @@
         }
 
         #sidebarTrigger i {
-            font-size: 1.1rem;
+            font-size: 1rem;
+            animation: nudge 1.8s ease-in-out infinite;
+        }
+
+        @@keyframes nudge {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(3px); }
         }
 
         body.sidebar-open #sidebarTrigger {
@@ -115,6 +139,7 @@
             pointer-events: none;
         }
 
+        /* Thương hiệu */
         .sidebar-brand {
             height: var(--topbar-height);
             display: flex;
@@ -122,80 +147,176 @@
             padding: 0 1.25rem;
             color: #ffffff;
             text-decoration: none;
-            font-weight: 700;
-            font-size: 1.15rem;
-            letter-spacing: 0.5px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
         }
 
-        .sidebar-brand i {
-            font-size: 1.5rem;
-            color: #38bdf8;
+        .sidebar-brand:hover {
+            color: #ffffff;
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--brand-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.45);
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            display: block;
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: -0.2px;
+            line-height: 1.1;
+        }
+
+        .brand-name span {
+            color: #8ea2f5;
+        }
+
+        .brand-tagline {
+            display: block;
+            font-size: 0.7rem;
+            color: #8f97cf;
+            font-weight: 500;
+            margin-top: 2px;
         }
 
         .sidebar-menu {
-            padding: 1rem 0.75rem;
+            padding: 0.75rem 0.85rem 1rem;
             list-style: none;
             margin: 0;
             flex-grow: 1;
         }
 
         .sidebar-heading {
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             text-transform: uppercase;
             font-weight: 700;
-            letter-spacing: 0.8px;
-            color: #64748b;
-            padding: 0.75rem 0.75rem 0.25rem;
+            letter-spacing: 1.1px;
+            color: #7c84bf;
+            padding: 1rem 0.85rem 0.4rem;
         }
 
         .nav-item {
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .nav-link-custom {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 0.65rem 0.85rem;
-            color: #cbd5e1;
+            padding: 0.5rem 0.85rem 0.5rem 0.5rem;
+            color: #cdd2f0;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 999px;
             font-weight: 500;
-            font-size: 0.925rem;
-            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
 
         .nav-link-custom i {
-            font-size: 1.15rem;
-            width: 22px;
-            text-align: center;
-            color: #94a3b8;
-            transition: color 0.2s ease;
+            font-size: 1.05rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #a2aadb;
+            background: rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .nav-link-custom:hover {
             color: #ffffff;
             background-color: var(--sidebar-hover);
+            transform: translateX(3px);
         }
 
         .nav-link-custom:hover i {
-            color: #38bdf8;
+            color: #ffffff;
+            background: rgba(67, 97, 238, 0.45);
         }
 
         .nav-link-custom.active {
             color: #ffffff;
-            background-color: #2563eb;
+            background: var(--brand-2);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
             font-weight: 600;
         }
 
         .nav-link-custom.active i {
             color: #ffffff;
+            background: rgba(255, 255, 255, 0.18);
         }
 
-        /* Main Content Container */
+        .nav-link-custom.active:hover {
+            transform: none;
+        }
+
+        /* Thẻ người dùng cuối sidebar */
+        .sidebar-user {
+            margin: 0 0.85rem 0.85rem;
+            padding: 0.75rem;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user .user-info {
+            min-width: 0;
+        }
+
+        .sidebar-user .user-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-user .user-role {
+            font-size: 0.72rem;
+            color: #a2aadb;
+        }
+
+        .sidebar-user .logout-btn {
+            margin-left: auto;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.12);
+            text-decoration: none;
+            transition: background 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fff;
+        }
+
+        /* ===== Nội dung chính ===== */
         #content-wrapper {
             flex-grow: 1;
             display: flex;
@@ -204,69 +325,150 @@
             min-height: 100vh;
         }
 
-        /* Top Navbar */
+        /* Thanh tiêu đề trên cùng (kính mờ) */
         .topbar {
             height: var(--topbar-height);
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: saturate(180%) blur(14px);
+            -webkit-backdrop-filter: saturate(180%) blur(14px);
+            border-bottom: 1px solid #eceef5;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1.5rem;
+            padding: 0 1.75rem;
             position: sticky;
             top: 0;
             z-index: 999;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            gap: 1rem;
         }
 
         .topbar-btn {
-            background: none;
-            border: none;
-            font-size: 1.35rem;
-            color: #475569;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 1px solid #e6e8f2;
+            font-size: 1.05rem;
+            color: #1a1d3a;
             cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 6px;
-            transition: background 0.2s;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            text-decoration: none;
         }
 
         .topbar-btn:hover {
-            background: #f1f5f9;
-            color: #0f172a;
+            background: #eef1fe;
+            border-color: #cdd6fb;
+            color: #4361ee;
+        }
+
+        .topbar-btn.danger:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .page-heading {
+            min-width: 0;
+        }
+
+        .page-heading .crumb {
+            font-size: 0.7rem;
+            color: #4361ee;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .page-heading .title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1a1d3a;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .date-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            background: #f3f4f8;
+            color: #4361ee;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
         .admin-profile {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 4px 10px;
-            border-radius: 30px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            padding: 3px 14px 3px 3px;
+            border-radius: 40px;
+            background: #fff;
+            border: 1px solid #e6e8f2;
         }
 
         .admin-avatar {
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: #3b82f6;
+            background: var(--brand-2);
             color: #ffffff;
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.35);
         }
 
-        /* Content Area */
+        .role-chip {
+            display: inline-block;
+            font-size: 0.66rem;
+            font-weight: 700;
+            color: #4361ee;
+            background: #eef1fe;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 3px;
+        }
+
         .main-content {
-            padding: 1.5rem;
+            padding: 1.75rem;
             flex-grow: 1;
+            animation: pageIn 0.35s ease-out both;
         }
 
-        /* Flash Message Alert */
-        .alert-dismissible .btn-close {
-            padding: 1rem;
+        @@keyframes pageIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .app-footer {
+            padding: 0.5rem 1.75rem 1.5rem;
+            color: #9aa0b8;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        @@media (max-width: 576px) {
+            .topbar { padding: 0 1rem; }
+            .main-content { padding: 1rem; }
+            .app-footer { padding: 0.5rem 1rem 1rem; }
         }
     </style>
 </head>
@@ -274,6 +476,7 @@
     <div id="wrapper">
         <!-- Vùng mép trái + nút mở menu: rê chuột vào để hiện thanh công cụ -->
         <div id="sidebarEdge"></div>
+        <div id="sidebarBackdrop"></div>
         <button type="button" id="sidebarTrigger" title="Mở menu" aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false">
             <i class="bi bi-chevron-double-right"></i>
         </button>
@@ -281,8 +484,11 @@
         <!-- Sidebar -->
         <nav id="sidebar">
             <a href="@Url.Action("Index", "Home")" class="sidebar-brand">
-                <i class="bi bi-buildings-fill"></i>
-                <span class="sidebar-brand-text">KTX MANAGER</span>
+                <div class="brand-mark"><i class="bi bi-buildings-fill"></i></div>
+                <div>
+                    <span class="brand-name">Dorm<span>Nest</span></span>
+                    <span class="brand-tagline">Quản lý Ký túc xá thông minh</span>
+                </div>
             </a>
 
             <ul class="sidebar-menu">
@@ -424,8 +630,15 @@
                 }
             </ul>
 
-            <div class="p-3 text-center border-top border-secondary border-opacity-25">
-                <small class="text-muted d-block">&copy; @DateTime.Now.Year KTX Pro</small>
+            <div class="sidebar-user">
+                <div class="admin-avatar">@avatarText</div>
+                <div class="user-info">
+                    <div class="user-name">@currentName</div>
+                    <div class="user-role">@roleText</div>
+                </div>
+                <a href="@Url.Action("Logout", "Account")" class="logout-btn" title="Đăng xuất">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
             </div>
         </nav>
 
@@ -433,32 +646,33 @@
         <div id="content-wrapper">
             <!-- Topbar Header -->
             <header class="topbar">
-                <div class="d-flex align-items-center gap-2">
-                    <button id="sidebarToggle" class="topbar-btn" title="Đóng/Mở menu">
-                        <i class="bi bi-list"></i>
+                <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                    <button id="sidebarToggle" class="topbar-btn" title="Mở menu">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
                     </button>
-                    <span class="fw-semibold text-secondary d-none d-sm-inline">
-                        Hệ thống Quản lý Ký túc xá
-                    </span>
+                    <div class="page-heading">
+                        <div class="crumb d-none d-sm-block">DormNest</div>
+                        <div class="title">@(ViewBag.Title ?? "Hệ thống Quản lý Ký túc xá")</div>
+                    </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
-                    <div class="text-muted small d-none d-md-block">
-                        <i class="bi bi-calendar3 me-1"></i> @DateTime.Now.ToString("dd/MM/yyyy")
+                <div class="d-flex align-items-center gap-2">
+                    <div class="date-chip d-none d-lg-inline-flex">
+                        <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy")
                     </div>
-                    <div class="admin-profile d-flex align-items-center">
-                        <div class="admin-avatar me-2">@avatarText</div>
-                        <div class="d-none d-sm-block text-start lh-1 pe-2">
-                            <span class="d-block fw-semibold" style="font-size: 0.85rem;">@currentName</span>
-                            <small class="text-primary fw-bold" style="font-size: 0.725rem;">Vai trò: @currentRole</small>
+                    <div class="admin-profile">
+                        <div class="admin-avatar">@avatarText</div>
+                        <div class="d-none d-sm-block text-start lh-1">
+                            <span class="d-block fw-semibold text-dark" style="font-size: 0.85rem;">@currentName</span>
+                            <span class="role-chip">@roleText</span>
                         </div>
-                        <a href="@Url.Action("ChangePassword", "Account")" class="btn btn-sm btn-outline-secondary ms-2" title="Đổi mật khẩu">
-                            <i class="bi bi-key"></i>
-                        </a>
-                        <a href="@Url.Action("Logout", "Account")" class="btn btn-sm btn-outline-danger ms-2" title="Đăng xuất">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </a>
                     </div>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="topbar-btn" title="Đổi mật khẩu">
+                        <i class="bi bi-key"></i>
+                    </a>
+                    <a href="@Url.Action("Logout", "Account")" class="topbar-btn danger" title="Đăng xuất">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
                 </div>
             </header>
 
@@ -484,6 +698,11 @@
 
                 @RenderBody()
             </main>
+
+            <footer class="app-footer">
+                <span>&copy; @DateTime.Now.Year <strong class="text-secondary">DormNest</strong> &middot; Hệ thống quản lý nội trú</span>
+                <span>Phiên bản 2.0</span>
+            </footer>
         </div>
     </div>
 

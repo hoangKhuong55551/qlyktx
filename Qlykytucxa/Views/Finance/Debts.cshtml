@@ -64,7 +64,7 @@
                     {
                         foreach (var item in Model)
                         {
-                            <tr>
+                            <tr class="@(item.DaysOverdue > 30 ? "row-accent-danger" : "row-accent-warning")">
                                 <td><span class="badge @(item.Kind == Qlykytucxa.Models.DormConstants.KhoanTienPhong ? "bg-primary" : "bg-warning text-dark")">@item.Kind</span></td>
                                 <td class="fw-semibold">@item.Payer</td>
                                 <td><span class="badge bg-light text-dark border">@item.RoomNumber</span></td>

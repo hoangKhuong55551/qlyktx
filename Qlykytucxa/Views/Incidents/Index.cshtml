@@ -82,7 +82,7 @@
                     {
                         foreach (var item in Model)
                         {
-                            <tr>
+                            <tr class="@(item.Status == "Đã hoàn thành" ? "" : (item.Status == "Đang xử lý" ? "row-accent-warning" : "row-accent-danger"))">
                                 <td class="ps-3 fw-bold text-primary">
                                     <i class="bi bi-door-closed me-1 text-secondary"></i>Phòng @item.RoomNumber
                                 </td>

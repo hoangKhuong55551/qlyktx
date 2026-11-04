@@ -140,7 +140,7 @@
     .panel-title {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #1a1d3a;
         margin: 0;
         display: flex;
         align-items: center;
@@ -311,7 +311,7 @@
 <div class="row g-4">
     <!-- Cột 1: Hóa đơn chưa thanh toán -->
     <div class="col-lg-4">
-        <div class="dashboard-panel">
+        <div class="dashboard-panel accent-top-danger">
             <div class="panel-header">
                 <h5 class="panel-title">
                     <i class="bi bi-exclamation-circle-fill text-danger"></i> Hóa đơn chưa thanh toán
@@ -366,7 +366,7 @@
 
     <!-- Cột 2: Hợp đồng sắp hết hạn -->
     <div class="col-lg-4">
-        <div class="dashboard-panel">
+        <div class="dashboard-panel accent-top-warning">
             <div class="panel-header">
                 <h5 class="panel-title">
                     <i class="bi bi-clock-history text-warning"></i> Hợp đồng sắp hết hạn
@@ -421,7 +421,7 @@
 
     <!-- Cột 3: Yêu cầu sửa chữa & bảo trì đang chờ xử lý -->
     <div class="col-lg-4">
-        <div class="dashboard-panel">
+        <div class="dashboard-panel accent-top-primary">
             <div class="panel-header">
                 <h5 class="panel-title">
                     <i class="bi bi-tools text-primary"></i> Sự cố bảo trì cần xử lý
@@ -500,7 +500,7 @@
                     {
                         label: 'Số người đang ở',
                         data: bldOccupied.length > 0 ? bldOccupied : [0],
-                        backgroundColor: '#3b82f6',
+                        backgroundColor: '#4361ee',
                         borderRadius: 4
                     },
                     {
@@ -517,7 +517,7 @@
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans'" } }
+                        labels: { boxWidth: 12, font: { family: "'Be Vietnam Pro'" } }
                     }
                 },
                 scales: {
@@ -560,7 +560,7 @@
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans'" } }
+                        labels: { boxWidth: 12, font: { family: "'Be Vietnam Pro'" } }
                     }
                 },
                 scales: {
