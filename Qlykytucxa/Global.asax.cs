@@ -12,6 +12,7 @@ namespace Qlykytucxa
     {
         protected void Application_Start()
         {
+            MvcHandler.DisableMvcResponseHeader = true; // an header X-AspNetMvc-Version
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);

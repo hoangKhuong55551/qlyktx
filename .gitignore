@@ -12,3 +12,7 @@ packages/
 
 # Du lieu JSON cu da import vao SQL
 *.json.imported
+
+# Ban publish va script database (chua du lieu that)
+publish/
+deploy/
