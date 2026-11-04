@@ -205,9 +205,22 @@ namespace Qlykytucxa.Controllers
                     CreatedBy = CurrentUser,
                     RoomFeePaymentId = fee.Id
                 });
-                ext.SaveChanges();
+                try
+                {
+                    ext.SaveChanges();
+                }
+                catch (DbUpdateException)
+                {
+                    // UX_CashFlow_RoomFee_Active: khoan nay vua duoc thu boi request khac (bam 2 lan / 2 nguoi cung thu)
+                    TempData["Error"] = "Khoản tiền phòng này vừa được thu rồi, không ghi trùng phiếu thu!";
+                    return RedirectToAction("RoomFees");
+                }
 
                 TempData["Success"] = $"Đã xác nhận thu tiền phòng {fee.Amount:N0} đ từ sinh viên {fee.StudentName} (Phòng {fee.RoomNumber}) thành công!";
+            }
+            else if (fee != null)
+            {
+                TempData["Error"] = "Khoản tiền phòng này đã được thu trước đó!";
             }
             return RedirectToAction("RoomFees");
         }
@@ -391,47 +404,56 @@ namespace Qlykytucxa.Controllers
         public ActionResult RefundDeposit(int id, decimal deductionAmount, string deductionReason, string paymentMethod = "Tiền mặt")
         {
             decimal refund = 0;
-            string error = RunInTransaction(shared =>
+            string error;
+            try
             {
-                var deposit = shared.Deposits.Find(id);
-                if (deposit == null || deposit.Status != DormConstants.CocDangGiu) return "Khoản cọc không ở trạng thái đang giữ!";
-
-                var reg = db.RoomRegistrations.Find(deposit.RegistrationId);
-                if (reg != null && reg.Status == DormConstants.StatusDangO)
-                    return "Sinh viên vẫn đang ở. Hãy làm thủ tục trả phòng / thanh lý trước khi hoàn cọc!";
-                if (deductionAmount < 0 || deductionAmount > deposit.Amount)
-                    return $"Số tiền khấu trừ phải từ 0 đến {deposit.Amount:N0} đ!";
-                if (deductionAmount > 0 && string.IsNullOrWhiteSpace(deductionReason))
-                    return "Vui lòng ghi lý do khấu trừ tiền cọc!";
-
-                refund = deposit.Amount - deductionAmount;
-                deposit.Status = DormConstants.CocDaHoan;
-                deposit.RefundedDate = DateTime.Now;
-                deposit.RefundAmount = refund;
-                deposit.DeductionAmount = deductionAmount;
-                deposit.DeductionReason = deductionAmount > 0 ? deductionReason.Trim() : null;
-                deposit.RefundedBy = CurrentUser;
-
-                if (refund > 0)
+                error = RunInTransaction(shared =>
                 {
-                    shared.CashFlowTransactions.Add(new CashFlowTransaction
+                    var deposit = shared.Deposits.Find(id);
+                    if (deposit == null || deposit.Status != DormConstants.CocDangGiu) return "Khoản cọc không ở trạng thái đang giữ!";
+
+                    var reg = db.RoomRegistrations.Find(deposit.RegistrationId);
+                    if (reg != null && reg.Status == DormConstants.StatusDangO)
+                        return "Sinh viên vẫn đang ở. Hãy làm thủ tục trả phòng / thanh lý trước khi hoàn cọc!";
+                    if (deductionAmount < 0 || deductionAmount > deposit.Amount)
+                        return $"Số tiền khấu trừ phải từ 0 đến {deposit.Amount:N0} đ!";
+                    if (deductionAmount > 0 && string.IsNullOrWhiteSpace(deductionReason))
+                        return "Vui lòng ghi lý do khấu trừ tiền cọc!";
+
+                    refund = deposit.Amount - deductionAmount;
+                    deposit.Status = DormConstants.CocDaHoan;
+                    deposit.RefundedDate = DateTime.Now;
+                    deposit.RefundAmount = refund;
+                    deposit.DeductionAmount = deductionAmount;
+                    deposit.DeductionReason = deductionAmount > 0 ? deductionReason.Trim() : null;
+                    deposit.RefundedBy = CurrentUser;
+
+                    if (refund > 0)
                     {
-                        TransactionDate = DateTime.Now,
-                        Type = DormConstants.GiaoDichChi,
-                        Category = DormConstants.KhoanHoanCoc,
-                        Amount = refund,
-                        RelatedPerson = $"{deposit.StudentName} ({deposit.StudentCode})",
-                        RoomNumber = deposit.RoomNumber,
-                        Description = deductionAmount > 0
-                            ? $"Hoàn cọc phòng {deposit.RoomNumber} (khấu trừ {deductionAmount:N0} đ: {deposit.DeductionReason})"
-                            : $"Hoàn trả toàn bộ tiền cọc phòng {deposit.RoomNumber}",
-                        PaymentMethod = paymentMethod,
-                        CreatedBy = CurrentUser,
-                        DepositId = deposit.Id
-                    });
-                }
-                return null;
-            });
+                        shared.CashFlowTransactions.Add(new CashFlowTransaction
+                        {
+                            TransactionDate = DateTime.Now,
+                            Type = DormConstants.GiaoDichChi,
+                            Category = DormConstants.KhoanHoanCoc,
+                            Amount = refund,
+                            RelatedPerson = $"{deposit.StudentName} ({deposit.StudentCode})",
+                            RoomNumber = deposit.RoomNumber,
+                            Description = deductionAmount > 0
+                                ? $"Hoàn cọc phòng {deposit.RoomNumber} (khấu trừ {deductionAmount:N0} đ: {deposit.DeductionReason})"
+                                : $"Hoàn trả toàn bộ tiền cọc phòng {deposit.RoomNumber}",
+                            PaymentMethod = paymentMethod,
+                            CreatedBy = CurrentUser,
+                            DepositId = deposit.Id
+                        });
+                    }
+                    return null;
+                });
+            }
+            catch (DbUpdateException)
+            {
+                // UX_CashFlow_Deposit_Active: khoan coc vua duoc hoan boi request khac
+                error = "Khoản cọc này vừa được hoàn rồi, không ghi trùng phiếu chi!";
+            }
 
             if (error != null) TempData["Error"] = error;
             else TempData["Success"] = $"Đã hoàn cọc {refund:N0} đ" + (deductionAmount > 0 ? $" (khấu trừ {deductionAmount:N0} đ)." : ".");

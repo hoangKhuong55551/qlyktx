@@ -52,6 +52,13 @@
 
     </dl>
 </div>
+@using (Html.BeginForm("ResetPassword", "Students", new { id = Model.StudentId }, FormMethod.Post, new { @class = "mb-3" }))
+{
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-sm btn-outline-warning text-dark" onclick="return confirm('Cấp mật khẩu tạm mới cho sinh viên này?');">
+        <i class="bi bi-key me-1"></i> Đặt lại mật khẩu đăng nhập
+    </button>
+}
 <p>
     @Html.ActionLink("Edit", "Edit", new { id = Model.StudentId }) |
     @Html.ActionLink("Back to List", "Index")

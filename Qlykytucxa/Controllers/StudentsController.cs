@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using Qlykytucxa.Filters;
 using Qlykytucxa.Models;
+using Qlykytucxa.Services;
 
 namespace Qlykytucxa.Controllers
 {
@@ -15,6 +16,7 @@ namespace Qlykytucxa.Controllers
     public class StudentsController : Controller
     {
         private MiniDormDBEntities db = new MiniDormDBEntities();
+        private DormExtContext ext = new DormExtContext();
 
         // GET: Students (Tìm kiếm, Lọc theo trạng thái nội trú, Phân trang)
         public ActionResult Index(string searchString, string dormFilter, int page = 1)
@@ -86,7 +88,8 @@ namespace Qlykytucxa.Controllers
             {
                 db.Students.Add(students);
                 db.SaveChanges();
-                TempData["Success"] = $"Thêm mới sinh viên {students.FullName} thành công!";
+                AccountService.SyncAccounts(db, ext); // tao tai khoan dang nhap (ten = ma SV, mat khau mac dinh, bat doi)
+                TempData["Success"] = $"Thêm mới sinh viên {students.FullName} thành công! Tài khoản đăng nhập: {students.StudentCode} / mật khẩu mặc định {AccountService.DefaultPassword} (bắt buộc đổi khi đăng nhập lần đầu).";
                 return RedirectToAction("Index");
             }
 
@@ -116,10 +119,38 @@ namespace Qlykytucxa.Controllers
             {
                 db.Entry(students).State = EntityState.Modified;
                 db.SaveChanges();
+                AccountService.SyncAccounts(db, ext); // doi ma SV -> doi ten dang nhap theo
                 TempData["Success"] = $"Cập nhật hồ sơ sinh viên {students.FullName} thành công!";
                 return RedirectToAction("Index");
             }
             return View(students);
+        }
+
+        // POST: Students/ResetPassword/5 - Cap mat khau tam moi (SV quen mat khau / tai khoan bi khoa)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ResetPassword(int id)
+        {
+            var student = db.Students.Find(id);
+            if (student == null) return HttpNotFound();
+
+            AccountService.SyncAccounts(db, ext);
+            var account = ext.UserAccounts.FirstOrDefault(a => a.StudentId == id);
+            if (account == null)
+            {
+                TempData["Error"] = "Không tạo được tài khoản cho sinh viên này (mã SV trống hoặc trùng tên tài khoản khác)!";
+                return RedirectToAction("Details", new { id });
+            }
+
+            string temp = AccountService.GenerateTemporaryPassword();
+            account.PasswordHash = AccountService.HashPassword(temp);
+            account.MustChangePassword = true;
+            account.FailedLoginCount = 0;
+            account.LockoutEnd = null;
+            ext.SaveChanges();
+
+            TempData["Success"] = $"Đã đặt lại mật khẩu cho tài khoản {account.Username}. Mật khẩu tạm: {temp} (chỉ hiển thị một lần, sinh viên phải đổi khi đăng nhập).";
+            return RedirectToAction("Details", new { id });
         }
 
         // GET: Students/Delete/5
@@ -162,7 +193,11 @@ namespace Qlykytucxa.Controllers
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) db.Dispose();
+            if (disposing)
+            {
+                db.Dispose();
+                ext.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

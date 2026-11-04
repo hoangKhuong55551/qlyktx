@@ -47,6 +47,7 @@ namespace Qlykytucxa.Models
         public DbSet<RoomFeePayment> RoomFeePayments { get; set; }
         public DbSet<Deposit> Deposits { get; set; }
         public DbSet<UtilityPrice> UtilityPrices { get; set; }
+        public DbSet<UserAccount> UserAccounts { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -103,6 +104,12 @@ namespace Qlykytucxa.Models
             modelBuilder.Entity<UtilityPrice>().Property(p => p.EffectiveFrom).HasColumnType("date");
             modelBuilder.Entity<UtilityPrice>().Property(p => p.Note).HasMaxLength(200);
             modelBuilder.Entity<UtilityPrice>().Property(p => p.CreatedBy).HasMaxLength(100);
+
+            modelBuilder.Entity<UserAccount>().ToTable("UserAccounts");
+            modelBuilder.Entity<UserAccount>().Property(u => u.Username).HasMaxLength(50).IsRequired();
+            modelBuilder.Entity<UserAccount>().Property(u => u.PasswordHash).HasMaxLength(200).IsRequired();
+            modelBuilder.Entity<UserAccount>().Property(u => u.Role).HasMaxLength(20).IsRequired();
+            modelBuilder.Entity<UserAccount>().Property(u => u.FullName).HasMaxLength(200);
         }
     }
 }

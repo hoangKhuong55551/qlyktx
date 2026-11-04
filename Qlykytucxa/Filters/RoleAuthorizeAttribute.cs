@@ -36,6 +36,15 @@ namespace Qlykytucxa.Filters
                 return;
             }
 
+            // Dang dung mat khau mac dinh / mat khau tam -> chi duoc vao trang tai khoan (doi mat khau, dang xuat)
+            if (user.MustChangePassword
+                && filterContext.ActionDescriptor.ControllerDescriptor.ControllerName != "Account")
+            {
+                filterContext.Controller.TempData["Error"] = "Vui lòng đổi mật khẩu trước khi tiếp tục!";
+                filterContext.Result = new RedirectToRouteResult(new RouteValueDictionary(new { controller = "Account", action = "ChangePassword" }));
+                return;
+            }
+
             if (_roles.Length > 0 && !_roles.Contains(user.Role))
             {
                 filterContext.Controller.TempData["Error"] = "Bạn không có quyền truy cập chức năng này!";

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -233,33 +234,42 @@ namespace Qlykytucxa.Controllers
             if (bill != null && !bill.IsPaid)
             {
                 // Danh dau da thu + ghi but toan vao So quy trong cung 1 transaction
-                using (var tx = db.Database.BeginTransaction())
-                using (var shared = DormExtContext.ShareConnection(db))
+                try
                 {
-                    shared.Database.UseTransaction(tx.UnderlyingTransaction);
-
-                    bill.IsPaid = true;
-                    bill.PaidDate = DateTime.Now;
-                    db.SaveChanges();
-
-                    if (bill.TotalAmount > 0)
+                    using (var tx = db.Database.BeginTransaction())
+                    using (var shared = DormExtContext.ShareConnection(db))
                     {
-                        shared.CashFlowTransactions.Add(new CashFlowTransaction
+                        shared.Database.UseTransaction(tx.UnderlyingTransaction);
+
+                        bill.IsPaid = true;
+                        bill.PaidDate = DateTime.Now;
+                        db.SaveChanges();
+
+                        if (bill.TotalAmount > 0)
                         {
-                            TransactionDate = DateTime.Now,
-                            Type = DormConstants.GiaoDichThu,
-                            Category = DormConstants.KhoanDienNuoc,
-                            Amount = bill.TotalAmount,
-                            RelatedPerson = $"Phòng {bill.Rooms.RoomNumber}",
-                            RoomNumber = bill.Rooms.RoomNumber,
-                            Description = $"Thu tiền điện nước tháng {bill.BillingMonth}/{bill.BillingYear} phòng {bill.Rooms.RoomNumber}",
-                            PaymentMethod = paymentMethod,
-                            CreatedBy = FinanceService.CurrentUserName(Session),
-                            UtilityBillId = bill.BillId
-                        });
-                        shared.SaveChanges();
+                            shared.CashFlowTransactions.Add(new CashFlowTransaction
+                            {
+                                TransactionDate = DateTime.Now,
+                                Type = DormConstants.GiaoDichThu,
+                                Category = DormConstants.KhoanDienNuoc,
+                                Amount = bill.TotalAmount,
+                                RelatedPerson = $"Phòng {bill.Rooms.RoomNumber}",
+                                RoomNumber = bill.Rooms.RoomNumber,
+                                Description = $"Thu tiền điện nước tháng {bill.BillingMonth}/{bill.BillingYear} phòng {bill.Rooms.RoomNumber}",
+                                PaymentMethod = paymentMethod,
+                                CreatedBy = FinanceService.CurrentUserName(Session),
+                                UtilityBillId = bill.BillId
+                            });
+                            shared.SaveChanges();
+                        }
+                        tx.Commit();
                     }
-                    tx.Commit();
+                }
+                catch (DbUpdateException)
+                {
+                    // UX_CashFlow_UtilityBill_Active: hoa don vua duoc thu boi request khac -> transaction da rollback
+                    TempData["Error"] = "Hóa đơn này vừa được thu rồi, không ghi trùng phiếu thu!";
+                    return RedirectToAction("Index");
                 }
                 TempData["Success"] = $"Đã xác nhận thanh toán {bill.TotalAmount:N0} đ (Phương thức: {paymentMethod}) cho phòng {bill.Rooms.RoomNumber} thành công!";
             }

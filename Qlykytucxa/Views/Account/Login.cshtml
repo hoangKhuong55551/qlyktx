@@ -41,11 +41,6 @@
             font-size: 28px;
             margin: 0 auto 16px;
         }
-        .btn-quick {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
     </style>
 </head>
 <body>
@@ -87,7 +82,7 @@
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
                     <input type="text" id="usernameInput" name="Username" class="form-control border-start-0" 
-                           placeholder="admin, staff hoặc mã SV (SV001)" value="@Model.Username" required autofocus />
+                           placeholder="Tên tài khoản hoặc mã sinh viên" value="@Model.Username" required autofocus />
                 </div>
                 @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger small" })
             </div>
@@ -97,16 +92,13 @@
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
                     <input type="password" id="passwordInput" name="Password" class="form-control border-start-0" 
-                           placeholder="Nhập mật khẩu (123456)" required />
+                           placeholder="Nhập mật khẩu" required />
                 </div>
                 @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger small" })
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                    <input type="checkbox" name="RememberMe" id="rememberMe" class="form-check-input" value="true" />
-                    <label class="form-check-label small text-muted" for="rememberMe">Ghi nhớ đăng nhập</label>
-                </div>
+            <div class="small text-muted mb-4">
+                Lần đầu đăng nhập, hệ thống sẽ yêu cầu bạn đổi mật khẩu mặc định do Ban Quản lý cấp.
             </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3 mb-3 shadow-sm">
@@ -114,35 +106,10 @@
             </button>
         }
 
-        <!-- Thao tác đăng nhập thử nghiệm nhanh -->
-        <div class="bg-light p-3 rounded-3 border">
-            <div class="small fw-bold text-muted mb-2 text-center">
-                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Chọn nhanh vai trò để kiểm thử / báo cáo:
-            </div>
-            <div class="d-flex flex-wrap gap-2 justify-content-center">
-                <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="quickFill('admin', '123456')">
-                    👑 Quản trị viên (Admin)
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-warning text-dark btn-quick" onclick="quickFill('staff', '123456')">
-                    🔧 Kỹ thuật viên (Staff)
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-success btn-quick" onclick="quickFill('SV001', '123456')">
-                    🎓 Sinh viên (SV001)
-                </button>
-            </div>
-        </div>
-
         <div class="text-center mt-3">
             <small class="text-muted">&copy; @DateTime.Now.Year KTX Manager &bull; Hệ thống quản lý nội trú</small>
         </div>
     </div>
 
-    <script>
-        function quickFill(user, pass) {
-            document.getElementById('usernameInput').value = user;
-            document.getElementById('passwordInput').value = pass;
-            document.getElementById('loginForm').submit();
-        }
-    </script>
 </body>
 </html>

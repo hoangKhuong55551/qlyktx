@@ -150,7 +150,46 @@ SELECT ISNULL(b.PaidDate, EOMONTH(DATEFROMPARTS(b.BillingYear, b.BillingMonth, 1
        NULL, N'Hệ thống', b.BillId, 0
 FROM dbo.UtilityBills b JOIN dbo.Rooms r ON r.RoomId = b.RoomId
 WHERE b.IsPaid = 1 AND b.TotalAmount > 0
-  AND NOT EXISTS (SELECT 1 FROM dbo.CashFlowTransactions t WHERE t.UtilityBillId = b.BillId);"
+  AND NOT EXISTS (SELECT 1 FROM dbo.CashFlowTransactions t WHERE t.UtilityBillId = b.BillId);",
+// Chan thu trung (bam nut 2 lan / 2 nguoi thu cung luc): moi khoan goc chi co 1 phieu con hieu luc.
+// Neu du lieu cu da bi trung thi bo qua tao index (khong lam hong khoi dong), can xu ly tay roi chay lai.
+@"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CashFlow_RoomFee_Active')
+   AND NOT EXISTS (SELECT RoomFeePaymentId FROM dbo.CashFlowTransactions
+                   WHERE IsVoided = 0 AND RoomFeePaymentId IS NOT NULL GROUP BY RoomFeePaymentId HAVING COUNT(*) > 1)
+CREATE UNIQUE INDEX UX_CashFlow_RoomFee_Active ON dbo.CashFlowTransactions(RoomFeePaymentId)
+WHERE IsVoided = 0 AND RoomFeePaymentId IS NOT NULL;",
+@"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CashFlow_UtilityBill_Active')
+   AND NOT EXISTS (SELECT UtilityBillId FROM dbo.CashFlowTransactions
+                   WHERE IsVoided = 0 AND UtilityBillId IS NOT NULL GROUP BY UtilityBillId HAVING COUNT(*) > 1)
+CREATE UNIQUE INDEX UX_CashFlow_UtilityBill_Active ON dbo.CashFlowTransactions(UtilityBillId)
+WHERE IsVoided = 0 AND UtilityBillId IS NOT NULL;",
+// Moi khoan coc: toi da 1 phieu thu coc + 1 phieu hoan coc con hieu luc
+@"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CashFlow_Deposit_Active')
+   AND NOT EXISTS (SELECT DepositId FROM dbo.CashFlowTransactions
+                   WHERE IsVoided = 0 AND DepositId IS NOT NULL GROUP BY DepositId, Category HAVING COUNT(*) > 1)
+CREATE UNIQUE INDEX UX_CashFlow_Deposit_Active ON dbo.CashFlowTransactions(DepositId, Category)
+WHERE IsVoided = 0 AND DepositId IS NOT NULL;"
+        };
+
+        // Tai khoan dang nhap. Xoa sinh vien -> tu xoa tai khoan cua sinh vien do.
+        public static readonly string[] AccountSql =
+        {
+@"IF OBJECT_ID(N'dbo.UserAccounts', N'U') IS NULL
+CREATE TABLE dbo.UserAccounts (
+    Id                 INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_UserAccounts PRIMARY KEY,
+    Username           NVARCHAR(50)   NOT NULL CONSTRAINT UQ_UserAccounts_Username UNIQUE,
+    PasswordHash       NVARCHAR(200)  NOT NULL,
+    Role               NVARCHAR(20)   NOT NULL CONSTRAINT CK_UserAccounts_Role CHECK (Role IN (N'Admin', N'Staff', N'Student')),
+    FullName           NVARCHAR(200)  NULL,
+    StudentId          INT            NULL CONSTRAINT FK_UserAccounts_Students REFERENCES dbo.Students(StudentId) ON DELETE CASCADE,
+    MustChangePassword BIT            NOT NULL,
+    FailedLoginCount   INT            NOT NULL CONSTRAINT DF_UserAccounts_Failed DEFAULT 0,
+    LockoutEnd         DATETIME2      NULL,
+    CreatedAt          DATETIME2      NOT NULL,
+    CONSTRAINT CK_UserAccounts_Student CHECK ((Role = N'Student' AND StudentId IS NOT NULL) OR (Role <> N'Student' AND StudentId IS NULL))
+);",
+@"IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_UserAccounts_Student')
+CREATE UNIQUE INDEX UX_UserAccounts_Student ON dbo.UserAccounts(StudentId) WHERE StudentId IS NOT NULL;"
         };
 
         public static void EnsureInitialized(string appDataPath)
@@ -163,7 +202,7 @@ WHERE b.IsPaid = 1 AND b.TotalAmount > 0
                 using (var ext = new DormExtContext())
                 {
                     ext.Database.ExecuteSqlCommand(SchemaSql);
-                    foreach (string sql in FinanceUpgradeSql)
+                    foreach (string sql in FinanceUpgradeSql.Concat(AccountSql))
                     {
                         ext.Database.ExecuteSqlCommand(sql);
                     }
@@ -171,7 +210,10 @@ WHERE b.IsPaid = 1 AND b.TotalAmount > 0
                 ImportJsonData(appDataPath);
 
                 using (var db = new MiniDormDBEntities())
+                using (var ext = new DormExtContext())
                 {
+                    Services.AccountService.SyncAccounts(db, ext);
+
                     // Form sua hop dong cu luu trang thai khong dau -> chuan hoa ve hang so co dau
                     db.Database.ExecuteSqlCommand("UPDATE dbo.RoomRegistrations SET Status = {0} WHERE Status = N'Dang o'", DormConstants.StatusDangO);
                     db.Database.ExecuteSqlCommand("UPDATE dbo.RoomRegistrations SET Status = {0} WHERE Status = N'Da tra phong'", DormConstants.StatusDaTraPhong);

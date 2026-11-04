@@ -19,6 +19,41 @@ namespace Qlykytucxa.Models
         public bool RememberMe { get; set; }
     }
 
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại!")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu hiện tại")]
+        public string CurrentPassword { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới!")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải có ít nhất 8 ký tự!")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập lại mật khẩu mới!")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu nhập lại không khớp!")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Nhập lại mật khẩu mới")]
+        public string ConfirmPassword { get; set; }
+    }
+
+    // Tai khoan dang nhap (bang dbo.UserAccounts). Mat khau chi luu dang bam PBKDF2.
+    public class UserAccount
+    {
+        public int Id { get; set; }
+        public string Username { get; set; }
+        public string PasswordHash { get; set; }
+        public string Role { get; set; }
+        public string FullName { get; set; }
+        public int? StudentId { get; set; }          // Chi co voi tai khoan sinh vien
+        public bool MustChangePassword { get; set; } // Mat khau mac dinh / vua bi dat lai -> bat doi khi dang nhap
+        public int FailedLoginCount { get; set; }
+        public DateTime? LockoutEnd { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     // Ten cac vai tro trong he thong
     public static class UserRoles
     {
@@ -35,6 +70,8 @@ namespace Qlykytucxa.Models
         public int? StudentId { get; set; }
         public int? RoomId { get; set; }
         public string RoomNumber { get; set; }
+        public int AccountId { get; set; }
+        public bool MustChangePassword { get; set; }
 
         // Lay nguoi dung dang dang nhap (null neu chua dang nhap)
         public static UserSession FromSession(HttpSessionStateBase session)
