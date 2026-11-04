@@ -32,7 +32,19 @@ $staging = Join-Path $env:TEMP ('ktx-zip-' + [guid]::NewGuid())
 Copy-Item $publish $staging -Recurse
 Remove-Item (Join-Path $staging 'Web.config') -Force
 if (Test-Path $zip) { Remove-Item $zip -Force }
-Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $zip
+# Tu ghi tung muc voi duong dan dang a/b/c. Compress-Archive / ZipFile cua PowerShell 5.1 ghi a\b\c
+# -> trinh giai nen tren hosting coi ca chuoi la ten 1 file, khong tao dung thu muc.
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
+try {
+    Get-ChildItem $staging -Recurse -File | ForEach-Object {
+        $name = $_.FullName.Substring($staging.Length + 1).Replace('\', '/')
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $_.FullName, $name, [IO.Compression.CompressionLevel]::Optimal)
+    }
+} finally {
+    $archive.Dispose()
+}
 Remove-Item $staging -Recurse -Force
 
 $size = [math]::Round((Get-Item $zip).Length / 1MB, 1)

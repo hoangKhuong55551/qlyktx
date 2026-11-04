@@ -391,6 +391,14 @@
                         </a>
                     </li>
 
+                    <li class="sidebar-heading">Hệ thống</li>
+                    <li class="nav-item">
+                        <a href="@Url.Action("Index", "UserAccounts")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "UserAccounts" ? "active" : "")">
+                            <i class="bi bi-person-gear"></i>
+                            <span class="nav-text">Quản lý Tài khoản</span>
+                        </a>
+                    </li>
+
                     <li class="sidebar-heading">Cổng Sinh viên</li>
                     <li class="nav-item">
                         <a href="@Url.Action("Index", "StudentPortal")" class="nav-link-custom @(ViewContext.RouteData.Values["controller"].ToString() == "StudentPortal" ? "active" : "")">

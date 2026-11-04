@@ -39,6 +39,42 @@ namespace Qlykytucxa.Models
         public string ConfirmPassword { get; set; }
     }
 
+    // Form Admin tao tai khoan quan tri (Admin / Staff). Tai khoan sinh vien tu tao khi them sinh vien.
+    public class AccountCreateViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập tên đăng nhập!")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3 đến 50 ký tự!")]
+        [RegularExpression(@"^[A-Za-z0-9._-]+$", ErrorMessage = "Tên đăng nhập chỉ gồm chữ không dấu, số và các ký tự . _ -")]
+        [Display(Name = "Tên đăng nhập")]
+        public string Username { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập họ tên!")]
+        [StringLength(200, ErrorMessage = "Họ tên tối đa 200 ký tự!")]
+        [Display(Name = "Họ và tên")]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn vai trò!")]
+        [Display(Name = "Vai trò")]
+        public string Role { get; set; }
+    }
+
+    public class AccountEditViewModel
+    {
+        public int Id { get; set; }
+
+        [Display(Name = "Tên đăng nhập")]
+        public string Username { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập họ tên!")]
+        [StringLength(200, ErrorMessage = "Họ tên tối đa 200 ký tự!")]
+        [Display(Name = "Họ và tên")]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn vai trò!")]
+        [Display(Name = "Vai trò")]
+        public string Role { get; set; }
+    }
+
     // Tai khoan dang nhap (bang dbo.UserAccounts). Mat khau chi luu dang bam PBKDF2.
     public class UserAccount
     {
@@ -60,6 +96,18 @@ namespace Qlykytucxa.Models
         public const string Admin = "Admin";
         public const string Staff = "Staff";
         public const string Student = "Student";
+
+        // Ten hien thi tieng Viet
+        public static string DisplayName(string role)
+        {
+            switch (role)
+            {
+                case Admin: return "Quản trị viên";
+                case Staff: return "Nhân viên";
+                case Student: return "Sinh viên";
+                default: return role;
+            }
+        }
     }
 
     public class UserSession

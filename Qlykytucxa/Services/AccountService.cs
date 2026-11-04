@@ -94,7 +94,9 @@ namespace Qlykytucxa.Services
                 ext.UserAccounts.Add(NewAccount("admin", UserRoles.Admin, "Thầy Trưởng Ban Quản lý KTX", null, hash()));
                 changed = true;
             }
-            if (!accounts.Any(a => a.Role == UserRoles.Staff))
+            // Chi tao staff mac dinh o lan cai dat dau tien (chua co tai khoan quan tri nao).
+            // Neu Admin da chu dong xoa het Staff thi khong tu tao lai tai khoan mat khau mac dinh.
+            if (!accounts.Any(a => a.Role != UserRoles.Student))
             {
                 ext.UserAccounts.Add(NewAccount("staff", UserRoles.Staff, "Nguyễn Văn Hùng (Kỹ thuật viên KTX)", null, hash()));
                 changed = true;

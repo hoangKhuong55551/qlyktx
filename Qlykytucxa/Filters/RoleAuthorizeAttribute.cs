@@ -36,6 +36,25 @@ namespace Qlykytucxa.Filters
                 return;
             }
 
+            // Doi chieu lai voi CSDL: tai khoan bi xoa -> dang xuat ngay; bi doi vai tro -> ap dung quyen moi ngay
+            using (var ext = new DormExtContext())
+            {
+                var current = ext.UserAccounts.Where(a => a.Id == user.AccountId)
+                    .Select(a => new { a.Role, a.FullName }).FirstOrDefault();
+                if (current == null)
+                {
+                    filterContext.HttpContext.Session.Clear();
+                    filterContext.Controller.TempData["Error"] = "Tài khoản của bạn không còn tồn tại. Vui lòng liên hệ quản trị viên!";
+                    filterContext.Result = new RedirectToRouteResult(new RouteValueDictionary(new { controller = "Account", action = "Login" }));
+                    return;
+                }
+                if (current.Role != user.Role && user.Role != UserRoles.Student)
+                {
+                    user.Role = current.Role;
+                    filterContext.HttpContext.Session["Role"] = current.Role;
+                }
+            }
+
             // Dang dung mat khau mac dinh / mat khau tam -> chi duoc vao trang tai khoan (doi mat khau, dang xuat)
             if (user.MustChangePassword
                 && filterContext.ActionDescriptor.ControllerDescriptor.ControllerName != "Account")

@@ -1,0 +1,62 @@
+@model Qlykytucxa.Models.AccountCreateViewModel
+@using Qlykytucxa.Models
+
+@{
+    ViewBag.Title = "Thêm tài khoản";
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="bi bi-person-plus-fill text-primary me-2"></i>Thêm tài khoản Admin / Nhân viên
+        </h4>
+        <p class="text-muted small mb-4">
+            Hệ thống sẽ tạo một mật khẩu tạm ngẫu nhiên (hiển thị một lần sau khi lưu). Người dùng phải đổi mật khẩu ở lần đăng nhập đầu tiên.
+        </p>
+
+        @using (Html.BeginForm())
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+                <div class="col-md-6 col-lg-5">
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Username, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "VD: nv.lan", autocomplete = "off" })
+                        @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger small" })
+                        <div class="form-text">Chữ không dấu, số và các ký tự . _ - (không dùng trùng mã sinh viên).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.FullName, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.FullName, new { @class = "form-control", placeholder = "VD: Trần Thị Lan" })
+                        @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Role, new { @class = "form-label fw-bold" })
+                        @Html.DropDownListFor(m => m.Role, new SelectList(new[]
+                        {
+                            new { Value = UserRoles.Staff, Text = "Nhân viên (xử lý sự cố, xem bảng tin)" },
+                            new { Value = UserRoles.Admin, Text = "Quản trị viên (toàn quyền)" }
+                        }, "Value", "Text", Model.Role), new { @class = "form-select" })
+                        @Html.ValidationMessageFor(m => m.Role, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Tạo tài khoản
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Quay lại</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

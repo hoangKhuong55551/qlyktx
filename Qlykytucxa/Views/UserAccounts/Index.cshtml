@@ -1,0 +1,198 @@
+@model IEnumerable<Qlykytucxa.Models.UserAccount>
+@using Qlykytucxa.Models
+
+@{
+    ViewBag.Title = "Quản lý Tài khoản";
+    string searchString = ViewBag.SearchString as string ?? "";
+    string roleFilter = ViewBag.RoleFilter as string ?? "";
+    int currentAccountId = ViewBag.CurrentAccountId;
+    DateTime now = ViewBag.Now;
+    var list = Model.ToList();
+}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-person-gear text-primary me-2"></i>Quản lý Tài khoản đăng nhập
+                </h4>
+                <p class="text-muted mb-0 small">
+                    <strong>@list.Count(a => a.Role == UserRoles.Admin)</strong> quản trị viên ·
+                    <strong>@list.Count(a => a.Role == UserRoles.Staff)</strong> nhân viên ·
+                    <strong>@list.Count(a => a.Role == UserRoles.Student)</strong> sinh viên
+                </p>
+            </div>
+            <a href="@Url.Action("Create")" class="btn btn-primary px-3 shadow-sm">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm tài khoản Admin / Nhân viên
+            </a>
+        </div>
+
+        <!-- Tim kiem & loc -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            @using (Html.BeginForm("Index", "UserAccounts", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+            {
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" class="form-control border-start-0"
+                               placeholder="Tìm theo tên đăng nhập, họ tên..." value="@searchString" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="roleFilter" class="form-select">
+                        <option value="">-- Tất cả vai trò --</option>
+                        <option value="@UserRoles.Admin" @(roleFilter == UserRoles.Admin ? "selected" : "")>Quản trị viên</option>
+                        <option value="@UserRoles.Staff" @(roleFilter == UserRoles.Staff ? "selected" : "")>Nhân viên</option>
+                        <option value="@UserRoles.Student" @(roleFilter == UserRoles.Student ? "selected" : "")>Sinh viên</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-3 flex-grow-1">
+                        <i class="bi bi-funnel-fill me-1"></i> Lọc
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary" title="Xóa bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Bang tai khoan -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Tên đăng nhập</th>
+                        <th>Họ và tên</th>
+                        <th>Vai trò</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (list.Any())
+                    {
+                        foreach (var a in list)
+                        {
+                            bool isMe = a.Id == currentAccountId;
+                            bool isLocked = a.LockoutEnd.HasValue && a.LockoutEnd.Value > now;
+                            bool isStudent = a.Role == UserRoles.Student;
+
+                            <tr>
+                                <td class="ps-3 fw-bold text-primary">
+                                    @a.Username
+                                    @if (isMe)
+                                    {
+                                        <span class="badge bg-info bg-opacity-10 text-info ms-1">Bạn</span>
+                                    }
+                                </td>
+                                <td class="fw-semibold">@a.FullName</td>
+                                <td>
+                                    @if (a.Role == UserRoles.Admin)
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-shield-lock me-1"></i>Quản trị viên</span>
+                                    }
+                                    else if (a.Role == UserRoles.Staff)
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary"><i class="bi bi-tools me-1"></i>Nhân viên</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-mortarboard me-1"></i>Sinh viên</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isLocked)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-lock-fill me-1"></i>Đang bị khóa đến @a.LockoutEnd.Value.ToString("HH:mm dd/MM")
+                                        </span>
+                                    }
+                                    else if (a.MustChangePassword)
+                                    {
+                                        <span class="badge bg-warning bg-opacity-25 text-dark">
+                                            <i class="bi bi-key me-1"></i>Chưa đổi mật khẩu
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success">
+                                            <i class="bi bi-check-circle me-1"></i>Hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@a.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end pe-3">
+                                    <div class="d-inline-flex gap-1">
+                                        @if (isLocked)
+                                        {
+                                            using (Html.BeginForm("Unlock", "UserAccounts", new { id = a.Id }, FormMethod.Post))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Mở khóa">
+                                                    <i class="bi bi-unlock"></i>
+                                                </button>
+                                            }
+                                        }
+                                        @if (!isMe)
+                                        {
+                                            using (Html.BeginForm("ResetPassword", "UserAccounts", new { id = a.Id }, FormMethod.Post))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-warning text-dark" title="Cấp lại mật khẩu"
+                                                        onclick="return confirm('Cấp mật khẩu tạm mới cho tài khoản @HttpUtility.JavaScriptStringEncode(a.Username)? Mật khẩu cũ sẽ không dùng được nữa.');">
+                                                    <i class="bi bi-key"></i>
+                                                </button>
+                                            }
+                                        }
+                                        @if (!isStudent)
+                                        {
+                                            <a href="@Url.Action("Edit", new { id = a.Id })" class="btn btn-sm btn-outline-primary" title="Sửa">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            if (!isMe)
+                                            {
+                                                using (Html.BeginForm("Delete", "UserAccounts", new { id = a.Id }, FormMethod.Post))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa tài khoản"
+                                                            onclick="return confirm('Xóa tài khoản @HttpUtility.JavaScriptStringEncode(a.Username)? Thao tác này không thể hoàn tác.');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                }
+                                            }
+                                        }
+                                        else if (a.StudentId.HasValue)
+                                        {
+                                            <a href="@Url.Action("Details", "Students", new { id = a.StudentId })" class="btn btn-sm btn-outline-info" title="Hồ sơ sinh viên">
+                                                <i class="bi bi-person-vcard"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Không tìm thấy tài khoản nào phù hợp.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="text-muted small mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Tài khoản sinh viên được tạo tự động khi thêm sinh viên (tên đăng nhập = mã SV) và bị xóa cùng hồ sơ sinh viên.
+            Mật khẩu tạm chỉ hiển thị một lần sau khi tạo / cấp lại.
+        </p>
+    </div>
+</div>

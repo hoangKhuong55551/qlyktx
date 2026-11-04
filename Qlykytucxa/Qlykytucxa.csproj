@@ -144,6 +144,7 @@
     <Compile Include="Controllers\RoomsController.cs" />
     <Compile Include="Controllers\StudentsController.cs" />
     <Compile Include="Controllers\UtilityBillsController.cs" />
+    <Compile Include="Controllers\UserAccountsController.cs" />
     <Compile Include="Filters\RoleAuthorizeAttribute.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -252,6 +253,9 @@
     <Content Include="Views\UtilityBills\PrintInvoice.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\ChangePassword.cshtml" />
+    <Content Include="Views\UserAccounts\Index.cshtml" />
+    <Content Include="Views\UserAccounts\Create.cshtml" />
+    <Content Include="Views\UserAccounts\Edit.cshtml" />
     <Content Include="Views\Announcements\Index.cshtml" />
     <Content Include="Views\Announcements\Create.cshtml" />
     <Content Include="Views\Announcements\Edit.cshtml" />
